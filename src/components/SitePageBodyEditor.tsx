@@ -2,16 +2,24 @@
 
 import { useRef, useState } from "react";
 import { getMediaEmbedUrl } from "@/lib/media-embeds";
+import MarkdownContent from "@/components/MarkdownContent";
+import SafeHtmlContent, { getHtmlHeadings } from "@/components/SafeHtmlContent";
+import { getMarkdownHeadings } from "@/lib/markdown-headings";
 
 type Asset = { id: string; title: string; mime_type: string; alt_text: string | null; is_public: boolean };
 
-export default function SitePageBodyEditor({ source, format, assets, allowFormat = true, sourceName = "body_markdown", helpId = "body-source-help" }: { source: string; format: "markdown" | "html"; assets: Asset[]; allowFormat?: boolean; sourceName?: string; helpId?: string }) {
+export default function SitePageBodyEditor({ source, format, assets, allowFormat = true, sourceName = "body_markdown", helpId = "body-source-help", showSectionIndex = false }: { source: string; format: "markdown" | "html"; assets: Asset[]; allowFormat?: boolean; sourceName?: string; helpId?: string; showSectionIndex?: boolean }) {
   const editor = useRef<HTMLTextAreaElement>(null);
   const [currentFormat, setCurrentFormat] = useState(format);
+  const [sourceText, setSourceText] = useState(source);
+  const [view, setView] = useState<"split" | "write" | "preview">("split");
   const [embedUrl, setEmbedUrl] = useState("");
   const [embedTitle, setEmbedTitle] = useState("Embedded video");
   const [embedMessage, setEmbedMessage] = useState("");
   const publicAssets = assets.filter(asset => asset.is_public);
+  const sectionHeadings = currentFormat === "html"
+    ? getHtmlHeadings(sourceText)
+    : getMarkdownHeadings(sourceText).filter(heading => heading.level === 2 && heading.title.toLocaleLowerCase() !== "explore more");
 
   function insertSnippet(snippet: string) {
     const field = editor.current;
@@ -19,6 +27,7 @@ export default function SitePageBodyEditor({ source, format, assets, allowFormat
     const start = field.selectionStart;
     const end = field.selectionEnd;
     const next = `${field.value.slice(0, start)}${snippet}${field.value.slice(end)}`;
+    setSourceText(next);
     const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
     setter?.call(field, next);
     field.dispatchEvent(new Event("input", { bubbles: true }));
@@ -56,9 +65,22 @@ export default function SitePageBodyEditor({ source, format, assets, allowFormat
       {publicAssets.length ? <div className="media-insert-list">{publicAssets.map(asset => <button key={asset.id} type="button" className="text-link" onClick={() => insert(asset)}>{asset.mime_type.startsWith("image/") ? "Image" : "File"}: {asset.title}{asset.mime_type.startsWith("image/") ? ` · alt: ${asset.alt_text || "missing"}` : ""}</button>)}</div> : <p>No public media yet. Upload a file in <a href="/admin/media">Media library</a> and mark it public.</p>}
       <div className="embed-insert"><strong>Embed a video</strong><label>Video link<input value={embedUrl} onChange={event => setEmbedUrl(event.target.value)} placeholder="https://youtu.be/… or https://vimeo.com/…"/></label><label>Accessible title<input value={embedTitle} onChange={event => setEmbedTitle(event.target.value)} maxLength={140}/></label><button type="button" className="text-button" onClick={insertEmbed}>Insert video</button>{embedMessage&&<small role="status">{embedMessage}</small>}</div>
     </div>
-    <label>Page content source
-      <textarea ref={editor} name={sourceName} rows={26} maxLength={100000} defaultValue={source} aria-describedby={helpId} spellCheck="false" />
-    </label>
+    <div className="body-editor-tools" role="group" aria-label="Editor view">
+      <span>Write and preview</span>
+      <button type="button" aria-pressed={view === "split"} onClick={() => setView("split")}>Split</button>
+      <button type="button" aria-pressed={view === "write"} onClick={() => setView("write")}>Write</button>
+      <button type="button" aria-pressed={view === "preview"} onClick={() => setView("preview")}>Preview</button>
+    </div>
+    <div className={`body-editor-workspace editor-mode-${view}`}>
+      <label className="body-editor-source">Content source
+        <textarea ref={editor} name={sourceName} rows={26} maxLength={100000} defaultValue={source} onChange={event => setSourceText(event.currentTarget.value)} aria-describedby={helpId} spellCheck="false" />
+      </label>
+      <section className="body-editor-preview" aria-label="Live content preview">
+        <span className="section-tag">LIVE PREVIEW · {currentFormat.toUpperCase()}</span>
+        {showSectionIndex && sectionHeadings.length > 0 && <nav className="editor-preview-index" aria-label="In this section"><b>IN THIS SECTION</b>{sectionHeadings.map((heading, index) => <a key={String(heading.id)} href={`#${heading.id}`}>{String(index + 1).padStart(2, "0")} {heading.title}</a>)}</nav>}
+        {currentFormat === "html" ? <SafeHtmlContent source={sourceText}/> : <MarkdownContent source={sourceText}/>}
+      </section>
+    </div>
     {!allowFormat && <small id={helpId}>Markdown images use <code>![description](url)</code>; video embeds use <code>@[Accessible title](YouTube-or-Vimeo-link)</code>. Use the buttons above to insert library assets or a video embed.</small>}
   </>;
 }

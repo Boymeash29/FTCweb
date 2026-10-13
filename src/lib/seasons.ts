@@ -38,6 +38,17 @@ export async function getPublicSeasons(): Promise<Season[]> {
   return data.map(row => toSeason(row as SeasonRow));
 }
 
+export async function getCurrentSeason(): Promise<Season> {
+  const client = await createClient();
+  if (client) {
+    const { data } = await client.from("seasons")
+      .select("id,name,slug,year_label,start_date,end_date,summary,is_current,status")
+      .eq("status", "published").eq("is_current", true).maybeSingle();
+    if (data) return toSeason(data as SeasonRow);
+  }
+  return currentSeason;
+}
+
 export async function getPublicSeason(slug: string): Promise<Season | null> {
   const client = await createClient();
   if (client) {

@@ -46,5 +46,25 @@ export async function saveSeason(formData: FormData) {
   revalidatePath("/seasons");
   revalidatePath(`/seasons/${slug}`);
   revalidatePath("/admin/seasons");
-  redirect("/admin/seasons?saved=1");
+  redirect(parsed.data.id ? `/admin/seasons/${data}?saved=1` : "/admin/seasons?saved=1");
+}
+
+export async function restoreSeasonRevision(formData: FormData) {
+  const user = await getCmsUser();
+  if (user?.role !== "admin") redirect("/admin/login?error=access");
+  const parsed = z.object({ id: z.string().uuid(), revisionId: z.string().uuid() }).safeParse(Object.fromEntries(formData));
+  if (!parsed.success) redirect("/admin/seasons?error=revision");
+  const client = await createClient();
+  if (!client) redirect("/admin/login?error=setup");
+  const { data: revision } = await client.from("season_revisions").select("snapshot").eq("id", parsed.data.revisionId).eq("season_id", parsed.data.id).maybeSingle();
+  const snapshot = z.object({ name: z.string().min(1).max(120), slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), year_label: z.string().nullable(), start_date: z.string().nullable(), end_date: z.string().nullable(), summary: z.string(), is_current: z.boolean(), status: z.enum(["draft", "published", "archived"]) }).safeParse(revision?.snapshot);
+  if (!snapshot.success) redirect(`/admin/seasons/${parsed.data.id}?error=revision`);
+  const { error } = await client.rpc("save_cms_season", { p_id: parsed.data.id, p_name: snapshot.data.name, p_slug: snapshot.data.slug, p_year_label: snapshot.data.year_label ?? "", p_start_date: snapshot.data.start_date, p_end_date: snapshot.data.end_date, p_summary: snapshot.data.summary, p_is_current: snapshot.data.is_current, p_status: snapshot.data.status });
+  if (error) redirect(`/admin/seasons/${parsed.data.id}?error=save`);
+  await client.from("audit_logs").insert({ actor_id: user.id, action: "revision_restored", entity_type: "season", entity_id: parsed.data.id, details: { revision_id: parsed.data.revisionId } });
+  revalidatePath("/");
+  revalidatePath("/seasons");
+  revalidatePath(`/seasons/${snapshot.data.slug}`);
+  revalidatePath("/admin/seasons");
+  redirect(`/admin/seasons/${parsed.data.id}?restored=1`);
 }
