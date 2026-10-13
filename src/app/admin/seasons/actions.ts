@@ -8,7 +8,7 @@ import { createClient, getCmsUser } from "@/lib/supabase/server";
 const seasonSchema = z.object({
   id: z.union([z.literal(""), z.string().uuid()]),
   name: z.string().trim().min(1).max(120),
-  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(100),
+  slug: z.string().trim().max(100),
   year_label: z.string().trim().max(40),
   start_date: z.string().refine(value => value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value)),
   end_date: z.string().refine(value => value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value)),
@@ -24,12 +24,14 @@ export async function saveSeason(formData: FormData) {
   if (!parsed.success || (parsed.data.start_date && parsed.data.end_date && parsed.data.end_date < parsed.data.start_date)) {
     redirect(`/admin/seasons?error=validation${formData.get("id") ? `&edit=${encodeURIComponent(String(formData.get("id")))}` : ""}`);
   }
+  const slug = (parsed.data.slug || `${parsed.data.name} ${parsed.data.year_label}`).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) redirect("/admin/seasons?error=validation");
   const client = await createClient();
   if (!client) redirect("/admin/login?error=setup");
   const { data, error } = await client.rpc("save_cms_season", {
     p_id: parsed.data.id || null,
     p_name: parsed.data.name,
-    p_slug: parsed.data.slug,
+    p_slug: slug,
     p_year_label: parsed.data.year_label,
     p_start_date: parsed.data.start_date || null,
     p_end_date: parsed.data.end_date || null,
@@ -42,7 +44,7 @@ export async function saveSeason(formData: FormData) {
     redirect(`/admin/seasons?error=${query}`);
   }
   revalidatePath("/seasons");
-  revalidatePath(`/seasons/${parsed.data.slug}`);
+  revalidatePath(`/seasons/${slug}`);
   revalidatePath("/admin/seasons");
   redirect("/admin/seasons?saved=1");
 }

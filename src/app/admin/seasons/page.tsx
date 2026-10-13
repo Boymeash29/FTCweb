@@ -28,7 +28,7 @@ export default async function AdminSeasons({ searchParams }: { searchParams: Pro
         <form action={saveSeason} className="entry-form season-form">
           <input type="hidden" name="id" value="" />
           <label>Season name<input name="name" required maxLength={120} placeholder="e.g. BioBuzz"/></label>
-          <label>URL slug<input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="e.g. biobuzz"/><small>Lowercase letters, numbers, and hyphens.</small></label>
+          <label>URL slug (optional)<input name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="Auto-generated from name and year"/><small>Leave this empty for an automatic URL, or enter lowercase letters, numbers, and hyphens.</small></label>
           <label>Year label<input name="year_label" maxLength={40} placeholder="e.g. 2026–27"/></label>
           <label>Short description<textarea name="summary" rows={3} maxLength={2000} placeholder="A short season introduction for the public archive."/></label>
           <div className="season-date-fields"><label>Start date<input type="date" name="start_date"/></label><label>End date<input type="date" name="end_date"/></label></div>

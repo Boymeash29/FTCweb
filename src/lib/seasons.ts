@@ -18,7 +18,7 @@ function toSeason(row: SeasonRow): Season {
     id: row.id,
     name: row.name,
     slug: row.slug,
-    year: row.year_label || row.start_date?.slice(0, 4) || "Season archive",
+    year: row.year_label || row.start_date?.slice(0, 4) || (row.is_current ? "Current" : "Year not set"),
     summary: row.summary || "Season details will be added as the team documents its work.",
     current: row.is_current,
     startDate: row.start_date,
