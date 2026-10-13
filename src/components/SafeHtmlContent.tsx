@@ -46,8 +46,7 @@ function parse(source: string): HtmlNode[] {
     const attrs: Record<string, string | boolean> = {};
     const rawAttrs = open[2].replace(/\/\s*$/, "");
     const attrPattern = /([a-zA-Z][\w:-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/g;
-    let attr: RegExpExecArray | null;
-    while ((attr = attrPattern.exec(rawAttrs))) {
+    for (const attr of rawAttrs.matchAll(attrPattern)) {
       const key = attr[1].toLowerCase();
       const value = decode(attr[2] ?? attr[3] ?? attr[4] ?? "").trim();
       if (!allowedAttrs.has(key) || key.startsWith("on")) continue;

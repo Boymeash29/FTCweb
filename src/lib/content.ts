@@ -1,5 +1,5 @@
 export type ContentStatus = "draft" | "scheduled" | "published" | "archived";
-export type Season = { name: string; slug: string; year: string; summary: string; current: boolean };
+export type Season = { id?: string; name: string; slug: string; year: string; summary: string; current: boolean; startDate?: string | null; endDate?: string | null; status?: "draft" | "published" | "archived" };
 
 export const currentSeason: Season = {
   name: "BioBuzz", slug: "biobuzz", year: "Current", current: true,
