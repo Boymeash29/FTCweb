@@ -15,7 +15,7 @@ const blockSchema = z.array(z.discriminatedUnion("type", [
   z.object({ type: z.literal("link"), label: z.string().trim().min(1).max(120), href: z.string().trim().max(500).refine(value => value.startsWith("/") && !value.startsWith("//") || /^https:\/\//i.test(value), "Use an HTTPS URL or a same-site path") })
 ])).max(80);
 const entrySchema = z.object({ title: z.string().trim().min(3).max(140), slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(160), type: z.enum(["news", "journal", "project"]), summary: z.string().trim().max(500), body_markdown: z.string().max(100000), status: z.enum(["draft", "scheduled", "published"]), scheduled_at: z.string().optional() });
-const sitePageSchema = z.object({ key: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), title: z.string().trim().min(1).max(140), eyebrow: z.string().trim().max(120), intro: z.string().trim().max(2000), body_markdown: z.string().max(100000) });
+const sitePageSchema = z.object({ key: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), title: z.string().trim().min(1).max(140), eyebrow: z.string().trim().max(120), intro: z.string().trim().max(2000), body_markdown: z.string().max(100000), body_format: z.enum(["markdown", "html"]) });
 
 export async function updateMechanism(formData: FormData) {
   const user = await getCmsUser();
@@ -47,7 +47,7 @@ export async function saveSitePage(formData: FormData) {
   if (readError) redirect(`/admin/pages/${parsed.data.key}?error=save`);
   const sections = Array.isArray(existing?.sections) && existing.sections.length > 0 ? existing.sections : definition.fallback.sections;
   const links = Array.isArray(existing?.links) && existing.links.length > 0 ? existing.links : definition.fallback.links;
-  const { error } = await supabase.from("site_pages").upsert({ page_key: parsed.data.key, title: parsed.data.title, eyebrow: parsed.data.eyebrow, intro: parsed.data.intro, sections, links, body_markdown: parsed.data.body_markdown, status: "published", updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "page_key" });
+  const { error } = await supabase.from("site_pages").upsert({ page_key: parsed.data.key, title: parsed.data.title, eyebrow: parsed.data.eyebrow, intro: parsed.data.intro, sections, links, body_markdown: parsed.data.body_markdown, body_format: parsed.data.body_format, status: "published", updated_by: user.id, updated_at: new Date().toISOString() }, { onConflict: "page_key" });
   if (error) redirect(`/admin/pages/${parsed.data.key}?error=save`);
   const page = getSitePageDefinition(parsed.data.key);
   if (!page) redirect("/admin/pages?error=validation");

@@ -3,7 +3,7 @@ import { pages } from "@/lib/content";
 
 export type SitePageSection = { title: string; body: string };
 export type SitePageLink = { title: string; href: string };
-export type SitePageContent = { title: string; eyebrow: string; intro: string; sections: SitePageSection[]; links: SitePageLink[]; bodyMarkdown?: string | null };
+export type SitePageContent = { title: string; eyebrow: string; intro: string; sections: SitePageSection[]; links: SitePageLink[]; bodyMarkdown?: string | null; bodyFormat?: "markdown" | "html" };
 export type SitePageDefinition = { key: string; path: string; label: string; fallback: SitePageContent };
 
 const make = (key: string, path: string, label: string, eyebrow: string, title: string, intro: string, sections: SitePageSection[] = [], links: SitePageLink[] = []): SitePageDefinition => ({ key, path, label, fallback: { eyebrow, title, intro, sections, links } });
@@ -64,7 +64,7 @@ export async function getSitePage(key: string): Promise<SitePageContent> {
   if (!definition) throw new Error(`Unknown site page: ${key}`);
   const client = await createClient();
   if (!client) return definition.fallback;
-  const { data } = await client.from("site_pages").select("title,eyebrow,intro,sections,links,body_markdown,status").eq("page_key", key).eq("status", "published").maybeSingle();
+  const { data } = await client.from("site_pages").select("title,eyebrow,intro,sections,links,body_markdown,body_format,status").eq("page_key", key).eq("status", "published").maybeSingle();
   if (!data) return definition.fallback;
-  return { title: data.title, eyebrow: data.eyebrow, intro: data.intro, sections: data.sections as SitePageSection[], links: data.links as SitePageLink[], bodyMarkdown: data.body_markdown };
+  return { title: data.title, eyebrow: data.eyebrow, intro: data.intro, sections: data.sections as SitePageSection[], links: data.links as SitePageLink[], bodyMarkdown: data.body_markdown, bodyFormat: data.body_format ?? "markdown" };
 }

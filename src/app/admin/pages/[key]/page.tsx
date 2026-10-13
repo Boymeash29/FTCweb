@@ -3,6 +3,7 @@ import { createClient, getCmsUser } from "@/lib/supabase/server";
 import { getSitePageDefinition } from "@/lib/site-pages";
 import { pageContentAsMarkdown } from "@/lib/site-pages";
 import { saveSitePage } from "@/app/admin/actions";
+import SitePageBodyEditor from "@/components/SitePageBodyEditor";
 
 export const metadata = { title: "Edit site page", robots: { index: false, follow: false } };
 
@@ -14,7 +15,10 @@ export default async function EditSitePage({ params, searchParams }: { params: P
   if (!definition) notFound();
   const client = await createClient();
   if (!client) redirect("/admin/login?error=setup");
-  const { data } = await client.from("site_pages").select("title,eyebrow,intro,sections,links,body_markdown").eq("page_key", key).maybeSingle();
+  const [{ data }, { data: assets }] = await Promise.all([
+    client.from("site_pages").select("title,eyebrow,intro,sections,links,body_markdown,body_format").eq("page_key", key).maybeSingle(),
+    client.from("media_assets").select("id,title,mime_type,alt_text,is_public").order("created_at", { ascending: false }).limit(100)
+  ]);
   const page = data ?? definition.fallback;
   const markdown = data?.body_markdown ?? pageContentAsMarkdown(page);
   const { saved, error } = await searchParams;
@@ -26,8 +30,8 @@ export default async function EditSitePage({ params, searchParams }: { params: P
       <label>Page title<input name="title" required maxLength={140} defaultValue={page.title}/></label>
       <label>Eyebrow / overline<input name="eyebrow" maxLength={120} defaultValue={page.eyebrow}/></label>
       <label>Introduction<textarea name="intro" rows={4} maxLength={2000} defaultValue={page.intro}/></label>
-      <label>Page body (Markdown)<textarea name="body_markdown" rows={24} maxLength={100000} defaultValue={markdown} aria-describedby="markdown-help" spellCheck="false"/></label>
-      <small id="markdown-help">Use a level-two heading (<code>## Group name</code>) for each group; these headings appear in the page’s “In this section” navigation. Markdown also supports paragraphs, bold, italics, lists, quotes, code fences, and HTTPS or same-site links. HTML is displayed as text and never executed.</small>
+      <SitePageBodyEditor source={markdown} format={data?.body_format === "html" ? "html" : "markdown"} assets={assets ?? []} helpId="page-source-help"/>
+      <small id="page-source-help">This document controls the entire page body, including every section and link. In Markdown, use <code>## Section name</code> headings to populate “In this section.” HTML is sanitized; scripts, embedded frames, forms, and unsafe links are removed.</small>
       <button className="button-link" type="submit">Save and publish page <span>→</span></button>
     </form>
   </section></main>;

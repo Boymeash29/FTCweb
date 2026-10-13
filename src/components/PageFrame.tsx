@@ -1,15 +1,16 @@
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
-import MarkdownContent from "@/components/MarkdownContent";
 import { getMarkdownHeadings } from "@/lib/markdown-headings";
 import { getSitePage, pageContentAsMarkdown } from "@/lib/site-pages";
+import SitePageBody from "@/components/SitePageBody";
+import { getHtmlHeadings } from "@/components/SafeHtmlContent";
 
 export default async function PageFrame({ pageKey }: { pageKey: string }) {
   const page = await getSitePage(pageKey);
   const { eyebrow, title, intro, sections, links } = page;
   const markdown = page.bodyMarkdown ?? pageContentAsMarkdown(page);
   const markdownSections = page.bodyMarkdown
-    ? getMarkdownHeadings(markdown).filter(heading => heading.level === 2 && heading.title.toLocaleLowerCase() !== "explore more")
+    ? page.bodyFormat === "html" ? getHtmlHeadings(markdown) : getMarkdownHeadings(markdown).filter(heading => heading.level === 2 && heading.title.toLocaleLowerCase() !== "explore more")
     : [];
 
   return (
@@ -26,14 +27,14 @@ export default async function PageFrame({ pageKey }: { pageKey: string }) {
             <nav className="section-index" aria-label="In this section">
               <span>IN THIS SECTION</span>
               {markdownSections.map((section, index) => (
-                <a key={section.id} href={`#${section.id}`}>
+                <a key={String(section.id)} href={`#${section.id}`}>
                   <span>{String(index + 1).padStart(2, "0")}</span>{section.title}
                 </a>
               ))}
             </nav>
           )}
           <div className={markdownSections.length > 0 ? "page-content" : "page-content page-content-full"}>
-            <MarkdownContent source={markdown} />
+            <SitePageBody source={markdown} format={page.bodyFormat} />
           </div>
         </section>
       ) : (

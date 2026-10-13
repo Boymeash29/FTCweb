@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient, getCmsUser } from "@/lib/supabase/server";
 import { createEntry, signOut } from "./actions";
 import { collections } from "@/lib/content";
+import SitePageBodyEditor from "@/components/SitePageBodyEditor";
 
 export const metadata = { title: "CMS dashboard", robots: { index: false, follow: false } };
 
@@ -19,7 +20,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   const client = await createClient();
   if (!client) redirect("/admin/login?error=setup");
-  const { data: entries } = await client.from("content_entries").select("id,title,slug,type,status,updated_at").order("updated_at", { ascending: false }).limit(8);
+  const [{ data: entries }, { data: assets }] = await Promise.all([
+    client.from("content_entries").select("id,title,slug,type,status,updated_at").order("updated_at", { ascending: false }).limit(8),
+    client.from("media_assets").select("id,title,mime_type,alt_text,is_public").order("created_at", { ascending: false }).limit(100)
+  ]);
   const { error, saved, archived } = await searchParams;
   const errorMessage = error === "validation" ? "Check the title, slug, and required fields." : error === "duplicate" ? "That slug is already in use." : error === "permission" ? "Editors can change drafts only. Ask an admin to edit this publication." : error === "missing" ? "This entry no longer exists." : error ? "Could not save this entry. Check the database setup and try again." : "";
 
@@ -43,7 +47,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <label>URL slug<input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="short-url-name"/></label>
           <label>Content type<select name="type"><option value="news">News</option><option value="journal">Build journal</option><option value="project">Engineering project</option></select></label>
           <label>Summary<textarea name="summary" maxLength={500} rows={3} placeholder="A short description"/></label>
-          <label>Page body (Markdown)<textarea name="body_markdown" rows={12} defaultValue="Write the entry content here." aria-describedby="blocks-help"/></label><small id="blocks-help">Common Markdown formatting is supported. HTML is rendered as text for safety.</small>
+          <SitePageBodyEditor source="Write the entry content here." format="markdown" assets={assets ?? []} allowFormat={false}/>
           <label>State<select name="status"><option value="draft">Save as draft</option>{user.role === "admin" && <><option value="published">Publish now</option><option value="scheduled">Schedule publication</option></>}</select></label>
           {user.role === "admin" && <label>Publish at (UTC)<input type="datetime-local" name="scheduled_at"/></label>}
           <button className="button-link" type="submit">Save entry <span>→</span></button>

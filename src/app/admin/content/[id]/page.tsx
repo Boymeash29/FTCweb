@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient, getCmsUser } from "@/lib/supabase/server";
 import { archiveEntry, restoreRevision, updateEntry } from "@/app/admin/actions";
 import { contentBlocksAsMarkdown } from "@/lib/site-pages";
+import SitePageBodyEditor from "@/components/SitePageBodyEditor";
 
 export const metadata = { title: "Edit content", robots: { index: false, follow: false } };
 
@@ -11,7 +12,10 @@ export default async function EditEntryPage({ params, searchParams }: { params: 
   const { id } = await params;
   const client = await createClient();
   if (!client) redirect("/admin/login?error=setup");
-  const { data: entry } = await client.from("content_entries").select("id,title,slug,type,summary,body,body_markdown,status,scheduled_at,published_at").eq("id", id).maybeSingle();
+  const [{ data: entry }, { data: assets }] = await Promise.all([
+    client.from("content_entries").select("id,title,slug,type,summary,body,body_markdown,status,scheduled_at,published_at").eq("id", id).maybeSingle(),
+    client.from("media_assets").select("id,title,mime_type,alt_text,is_public").order("created_at", { ascending: false }).limit(100)
+  ]);
   if (!entry) notFound();
   const { data: revisions } = user.role === "admin" ? await client.from("content_revisions").select("id,version,created_at").eq("entry_id", id).order("version", { ascending: false }).limit(20) : { data: [] };
   const { saved, restored } = await searchParams;
@@ -24,8 +28,7 @@ export default async function EditEntryPage({ params, searchParams }: { params: 
       <label>URL slug<input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" defaultValue={entry.slug}/></label>
       <label>Content type<select name="type" defaultValue={entry.type}><option value="news">News</option><option value="journal">Build journal</option><option value="project">Engineering project</option></select></label>
       <label>Summary<textarea name="summary" maxLength={500} rows={3} defaultValue={entry.summary}/></label>
-      <label>Page body (Markdown)<textarea name="body_markdown" rows={24} maxLength={100000} defaultValue={entry.body_markdown ?? contentBlocksAsMarkdown(entry.body)} spellCheck="false"/></label>
-      <small>Common Markdown formatting is supported. HTML is rendered as text for safety.</small>
+      <SitePageBodyEditor source={entry.body_markdown ?? contentBlocksAsMarkdown(entry.body)} format="markdown" assets={assets ?? []} allowFormat={false}/>
       <label>State<select name="status" defaultValue={user.role === "admin" ? entry.status : "draft"}><option value="draft">Save as draft</option>{user.role === "admin" && <><option value="published">Published</option><option value="scheduled">Scheduled</option></>}</select></label>
       {user.role === "admin" && <label>Publish at (UTC)<input type="datetime-local" name="scheduled_at" defaultValue={entry.scheduled_at ? new Date(entry.scheduled_at).toISOString().slice(0, 16) : ""}/></label>}
       <button className="button-link" type="submit">Save changes <span>→</span></button>

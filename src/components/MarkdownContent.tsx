@@ -1,15 +1,18 @@
 import type { ReactNode } from "react";
 import { getMarkdownHeadings } from "@/lib/markdown-headings";
+import { getMediaEmbedUrl } from "@/lib/media-embeds";
 
 function safeHref(value: string) { return (value.startsWith("/") && !value.startsWith("//")) || /^https:\/\//i.test(value); }
 
 function inline(text: string): ReactNode[] {
-  const token=/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|\[[^\]]+\]\([^)]+\))/g;
+  const token=/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*|@\[[^\]]+\]\([^)]+\)|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))/g;
   const output:ReactNode[]=[];let cursor=0;let match:RegExpExecArray|null;
   while(true){match=token.exec(text);if(!match)break;if(match.index>cursor)output.push(text.slice(cursor,match.index));const value=match[0];
     if(value.startsWith("`"))output.push(<code key={match.index}>{value.slice(1,-1)}</code>);
     else if(value.startsWith("**"))output.push(<strong key={match.index}>{value.slice(2,-2)}</strong>);
     else if(value.startsWith("*"))output.push(<em key={match.index}>{value.slice(1,-1)}</em>);
+    else if(value.startsWith("@[") ){const embed=/^@\[([^\]]+)\]\(([^)]+)\)$/.exec(value);const src=embed&&getMediaEmbedUrl(embed[2]);if(embed&&src)output.push(<iframe key={match.index} className="embed-frame" src={src} title={embed[1]} loading="lazy" referrerPolicy="strict-origin-when-cross-origin" sandbox="allow-scripts allow-same-origin allow-presentation" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowFullScreen/>);else output.push(value);}
+    else if(value.startsWith("![")){const image=/^!\[([^\]]*)\]\(([^)]+)\)$/.exec(value);if(image&&safeHref(image[2]))output.push(<img key={match.index} src={image[2]} alt={image[1]}/>);else output.push(value);}
     else {const link=/^\[([^\]]+)\]\(([^)]+)\)$/.exec(value);if(link&&safeHref(link[2]))output.push(<a key={match.index} href={link[2]}>{link[1]}</a>);else output.push(value);}
     cursor=match.index+value.length;
   }
