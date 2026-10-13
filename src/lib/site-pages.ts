@@ -45,6 +45,36 @@ export function pageContentAsMarkdown(page: Pick<SitePageContent, "sections" | "
   return `${sections}${links}`.trim();
 }
 
+export function homeSectionsFromBody(source: string, format: "markdown" | "html" = "markdown"): SitePageSection[] {
+  const sections: SitePageSection[] = [];
+  if (format === "html") {
+    const headings = [...source.matchAll(/<h2\b[^>]*>([\s\S]*?)<\/h2\s*>/gi)];
+    for (let index = 0; index < headings.length; index++) {
+      const title = headings[index][1].replace(/<[^>]+>/g, "").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").trim();
+      if (!title || title.toLowerCase() === "explore more") continue;
+      const start = (headings[index].index ?? 0) + headings[index][0].length;
+      const end = headings[index + 1]?.index ?? source.length;
+      sections.push({ title, body: source.slice(start, end).trim() });
+    }
+    return sections;
+  }
+
+  const lines = source.replace(/\r\n?/g, "\n").split("\n");
+  let current: SitePageSection | undefined;
+  for (const line of lines) {
+    const heading = /^##\s+(.+)$/.exec(line);
+    if (heading) {
+      if (current) sections.push(current);
+      const title = heading[1].trim();
+      current = title.toLowerCase() === "explore more" ? undefined : { title, body: "" };
+      continue;
+    }
+    if (current) current.body += `${current.body ? "\n" : ""}${line}`;
+  }
+  if (current) sections.push(current);
+  return sections.map(section => ({ ...section, body: section.body.trim() })).filter(section => section.title && section.body);
+}
+
 export function contentBlocksAsMarkdown(value: unknown) {
   if(!Array.isArray(value))return "";
   return value.map((block:Record<string,unknown>)=>{
