@@ -1,6 +1,7 @@
 import { signInWithPassword } from "./actions";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export const metadata = { title: "Team login", robots: { index: false, follow: false } };
 
@@ -31,6 +32,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <input id="password" name="password" type="password" autoComplete="current-password" required minLength={8} maxLength={128} />
           <button className="google-button" type="submit">Sign in <b>→</b></button>
         </form>
+        <Link className="text-link" href="/admin/forgot-password">Forgot your password? →</Link>
         <small>Access is limited to accounts explicitly approved by a team administrator.</small>
       </div>
     </main>
