@@ -19,11 +19,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const { data: { session } } = await supabase.auth.getSession();
     accessToken = session?.access_token;
   }
-  if (data.is_public && !process.env.R2_ENDPOINT) {
-    const base = process.env.R2_PUBLIC_BASE_URL;
-    if (!base) return NextResponse.json({ error: "Public media delivery is not configured" }, { status: 503 });
-    return NextResponse.redirect(`${base.replace(/\/$/, "")}/${data.object_key.split("/").map(encodeURIComponent).join("/")}`);
-  }
   const r2 = createR2Client(accessToken);
   const bucket = process.env.R2_BUCKET;
   if (!r2 || !bucket) return NextResponse.json({ error: "Private storage is not configured" }, { status: 503 });

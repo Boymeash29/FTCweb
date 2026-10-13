@@ -87,7 +87,7 @@ The admin screen creates news, journal, and project entries. Supported blocks ar
 
 ## Media and documents
 
-The media library validates file extension/MIME and a 100 MB limit, issues short-lived signed R2 PUT URLs, stores metadata in Postgres, defaults assets to private, and issues authorized signed downloads. Public delivery requires a Cloudflare R2 custom domain in `R2_PUBLIC_BASE_URL`; editors cannot make an asset public. Configure bucket CORS to allow only the local origin and selected production/preview origins, PUT/GET/HEAD methods, and the `Content-Type` request header. Example allowed origins: `http://localhost:3000` and the exact production HTTPS origin. Do not use `*` for origins. Uploads, signed access, and CORS have not been tested against a real R2 bucket. Object replacement/deletion and content usage tracking are not implemented. Do not upload student photos until consent and publishing approval are confirmed.
+The media library validates file extension/MIME and a 100 MB limit, issues short-lived signed R2 PUT URLs, stores metadata in Postgres, defaults assets to private, and issues authorized signed downloads. Public assets are delivered through short-lived signed URLs while the bucket remains private; `R2_PUBLIC_BASE_URL` is optional for custom-domain delivery. Editors cannot make an asset public. Configure bucket CORS to allow only the local origin and selected production/preview origins, PUT/GET/HEAD methods, and the `Content-Type` request header. Example allowed origins: `http://localhost:3000` and the exact production HTTPS origin. Do not use `*` for origins. Real uploads and signed access should be verified against the production R2 bucket. Object replacement/deletion and content usage tracking are not implemented. Do not upload student photos until consent and publishing approval are confirmed.
 
 ## Publishing, scheduled posts, revisions, and backups
 
@@ -113,7 +113,7 @@ Add these Vercel environment variables:
 | `R2_SECRET_ACCESS_KEY` | Production | Matching R2 secret access key |
 | `R2_BUCKET` | Production | `robotics` |
 | `R2_REGION` | Production | `auto` |
-| `R2_PUBLIC_BASE_URL` | Optional, Production | Only if an R2 custom domain is configured for public media delivery |
+| `R2_PUBLIC_BASE_URL` | Optional, Production | Optional R2 custom domain for public media delivery; signed delivery works without it |
 | `SUPABASE_SECRET_KEY` | Production only | Required only for scheduled publishing; server-side secret key |
 | `CRON_SECRET` | Production only | Required only for scheduled publishing; use a long random secret |
 
