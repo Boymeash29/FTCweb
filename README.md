@@ -170,3 +170,11 @@ At each leadership handover, transfer at least two trusted adult owners, rotate 
 ## Known costs and limitations
 
 For a dependable production start, budget at least the current Supabase Pro subscription ($25/month) if using its managed daily backups. R2 may remain within the published free allowance for a small archive, but verify usage and future limits. Hosting cost depends on the provider and school/team eligibility; Vercel Hobby terms do not fit commercial use, and this project has no deployment configured. Domain registration cost depends on the selected name/registrar. No recurring service is actually provisioned by this repository.
+
+
+## Current hosting setup (13 October 2026)
+
+- GitHub repository `Boymeash29/FTCweb` is connected to Vercel project `buzzerbots-ftc`; `main` is the production branch.
+- The Vercel origin is `https://buzzerbots-ftc.vercel.app`. Production environment variables are configured in Vercel, and Supabase Auth's Site URL and `/auth/callback` allowlist use this origin.
+- R2 credentials are production-only. The local R2 endpoint is not set in Vercel. Restrict R2 bucket CORS to the exact production origin before testing browser uploads.
+- Verify the initial production build and sign-in before treating the deployment as launch-ready.
