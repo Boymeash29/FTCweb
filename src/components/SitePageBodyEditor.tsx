@@ -65,12 +65,12 @@ export default function SitePageBodyEditor({ source, format, assets, allowFormat
       {publicAssets.length ? <div className="media-insert-list">{publicAssets.map(asset => <button key={asset.id} type="button" className="text-link" onClick={() => insert(asset)}>{asset.mime_type.startsWith("image/") ? "Image" : "File"}: {asset.title}{asset.mime_type.startsWith("image/") ? ` · alt: ${asset.alt_text || "missing"}` : ""}</button>)}</div> : <p>No public media yet. Upload a file in <a href="/admin/media">Media library</a> and mark it public.</p>}
       <div className="embed-insert"><strong>Embed a video</strong><label>Video link<input value={embedUrl} onChange={event => setEmbedUrl(event.target.value)} placeholder="https://youtu.be/… or https://vimeo.com/…"/></label><label>Accessible title<input value={embedTitle} onChange={event => setEmbedTitle(event.target.value)} maxLength={140}/></label><button type="button" className="text-button" onClick={insertEmbed}>Insert video</button>{embedMessage&&<small role="status">{embedMessage}</small>}</div>
     </div>
-    <div className="body-editor-tools" role="group" aria-label="Editor view">
-      <span>Write and preview</span>
+    <fieldset className="body-editor-tools">
+      <legend>Write and preview</legend>
       <button type="button" aria-pressed={view === "split"} onClick={() => setView("split")}>Split</button>
       <button type="button" aria-pressed={view === "write"} onClick={() => setView("write")}>Write</button>
       <button type="button" aria-pressed={view === "preview"} onClick={() => setView("preview")}>Preview</button>
-    </div>
+    </fieldset>
     <div className={`body-editor-workspace editor-mode-${view}`}>
       <label className="body-editor-source">Content source
         <textarea ref={editor} name={sourceName} rows={26} maxLength={100000} defaultValue={source} onChange={event => setSourceText(event.currentTarget.value)} aria-describedby={helpId} spellCheck="false" />

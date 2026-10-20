@@ -10,24 +10,26 @@ export default async function AdminSeasons({ searchParams }: { searchParams: Pro
   const client = await createClient();
   if (!client) redirect("/admin/login?error=setup");
   const [{ data: seasons }, { error, saved }] = await Promise.all([
-    client.from("seasons").select("id,name,slug,year_label,start_date,end_date,summary,is_current,status").order("start_date", { ascending: false, nullsFirst: false }),
+    client.from("seasons").select("id,name,slug,year_label,start_date,end_date,summary,is_current,status,team_id").order("start_date", { ascending: false, nullsFirst: false }),
     searchParams
   ]);
+  const { data: teams } = await client.from("teams").select("id,name,number").order("sort_order");
   const errorText = error === "validation" ? "Check the season name, URL, and date range." : error === "duplicate" ? "That URL is already used by another season." : error ? "Could not save the season. Confirm the database migration is installed and try again." : "";
 
   return <main id="main-content" className="admin-shell"><section className="admin-dashboard">
     <div className="admin-top"><div><span className="section-tag">TEAM CMS / SEASONS</span><h1>Seasons<span className="period">.</span></h1><p><a href="/admin">← Dashboard</a> · Create a new season or add a past season to the archive.</p></div></div>
     {saved && <div className="notice-success">Season saved.</div>}
     {errorText && <div role="alert" className="form-error">{errorText}</div>}
-    <section className="admin-panel season-manager-help"><b>How seasons work</b><p>Only published seasons appear on the public site. Mark one season as current to move the “Current” label to it; the previous one stays in the archive. Archive old records instead of deleting them.</p></section>
+    <section className="admin-panel season-manager-help"><b>How seasons work</b><p>Published seasons belong to one team and appear in that team’s archive. Each team can have one current season; the other team’s current season is unaffected. Archive old records instead of deleting them.</p></section>
     <div className="admin-content-grid season-manager-grid">
       <section className="admin-panel"><div className="panel-head"><div><span className="section-tag">SEASON ARCHIVE</span><h2>Saved seasons</h2></div></div>
-        {seasons?.length ? <div className="entry-list">{seasons.map(season=><div className="entry-row season-admin-row" key={season.id}><span className="entry-type">{season.is_current ? "CURRENT" : season.status.toUpperCase()}</span><b>{season.name}</b><small>{season.year_label || season.start_date?.slice(0,4) || "No year"}</small><a href={`/admin/seasons/${season.id}`}>Edit ↗</a></div>)}</div> : <p className="admin-empty">No seasons found. Use the form to create one.</p>}
+        {seasons?.length ? <div className="entry-list">{seasons.map(season=><div className="entry-row season-admin-row" key={season.id}><span className="entry-type">{season.is_current ? "CURRENT" : season.status.toUpperCase()}</span><b>{season.name}</b><small>{teams?.find(team=>team.id===season.team_id)?.name || "Shared"} · {season.year_label || season.start_date?.slice(0,4) || "No year"}</small><a href={`/admin/seasons/${season.id}`}>Edit ↗</a></div>)}</div> : <p className="admin-empty">No seasons found. Use the form to create one.</p>}
       </section>
       <section className="admin-panel"><div className="panel-head"><div><span className="section-tag">QUICK CREATE</span><h2>Add a season</h2></div></div>
         <form action={saveSeason} className="entry-form season-form">
           <input type="hidden" name="id" value="" />
-          <label>Season name<input name="name" required maxLength={120} placeholder="e.g. BioBuzz"/></label>
+          <label>Team<select name="team_id" defaultValue=""><option value="">Shared / not assigned</option>{teams?.map(team=><option key={team.id} value={team.id}>{team.name} · {team.number}</option>)}</select></label>
+          <label>Season name<input name="name" required maxLength={120} placeholder="e.g. Into the Deep"/></label>
           <label>URL slug (optional)<input name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="Auto-generated from name and year"/><small>Leave this empty for an automatic URL, or enter lowercase letters, numbers, and hyphens.</small></label>
           <label>Year label<input name="year_label" maxLength={40} placeholder="e.g. 2026–27"/></label>
           <label>Short description<textarea name="summary" rows={3} maxLength={2000} placeholder="A short season introduction for the public archive."/></label>

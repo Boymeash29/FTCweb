@@ -1,9 +1,9 @@
 export type ContentStatus = "draft" | "scheduled" | "published" | "archived";
-export type Season = { id?: string; name: string; slug: string; year: string; summary: string; current: boolean; startDate?: string | null; endDate?: string | null; status?: "draft" | "published" | "archived" };
+export type Season = { id?: string; name: string; slug: string; year: string; summary: string; current: boolean; startDate?: string | null; endDate?: string | null; status?: "draft" | "published" | "archived"; teamId?: string; teamName?: string; teamNumber?: string; teamSlug?: string };
 
 export const currentSeason: Season = {
   name: "BioBuzz", slug: "biobuzz", year: "Current", current: true,
-  summary: "The current season for Seven Hills FTC Team 23826. Robot details, events, results, and engineering documentation will be added when verified by the team."
+  summary: "The current season for Seven Hills FTC Team 23826. Robot details, events, results, and engineering documentation will be added when verified by the team.", teamName: "BuzzerBots", teamNumber: "23826", teamSlug: "buzzerbots"
 };
 
 export const navigation = [
@@ -17,7 +17,7 @@ export const navigation = [
 export const collections = ["seasons", "robots", "mechanisms", "projects", "software", "members", "competitions", "sponsors", "outreach", "journal", "news", "media"] as const;
 
 export const pages: Record<string, { eyebrow: string; title: string; intro: string; sections: { title: string; body: string }[] }> = {
-  robot: { eyebrow: "Current season · BioBuzz", title: "The robot", intro: "A focused overview of the machine, its design goals, and the engineering decisions behind it.", sections: [
+  robot: { eyebrow: "Robot teams · Season archives", title: "The robots", intro: "A focused overview of the machine, its design goals, and the engineering decisions behind it.", sections: [
     { title: "Robot overview", body: "Robot details have not yet been supplied by the team. This space is ready for the robot's purpose, constraints, and design summary." },
     { title: "Architecture", body: "Document the mechanical, electrical, and software architecture here as designs are confirmed." },
     { title: "Build history", body: "The build log will connect iterations, tests, and lessons learned to this season's robot." }
@@ -27,7 +27,7 @@ export const pages: Record<string, { eyebrow: string; title: string; intro: stri
     { title: "Hardware", body: "Mechanism documentation is organized by purpose, requirements, design rationale, iterations, and test evidence." },
     { title: "Software", body: "Architecture, subsystems, autonomous routines, controls, and debugging notes can be documented without assuming any particular technology." }
   ] },
-  team: { eyebrow: "The people behind the work", title: "The BuzzerBots", intro: "The BuzzerBots are Seven Hills FTC Team 23826, bringing students together to design, build, program, and share their work.", sections: [
+  team: { eyebrow: "The people behind the work", title: "The BuzzerBots", intro: "BuzzerBots 23826 and Hive Mind 36438 are two distinct Seven Hills FTC teams, each bringing students together to design, build, program, compete, and share their work.", sections: [
     { title: "Students", body: "Approved member names and roles will be added here. Student information and photographs require team approval." },
     { title: "Mentors", body: "Faculty mentors and coaches will be listed when the team provides approved names and roles." }
   ] },
@@ -62,7 +62,7 @@ export const seasons: Season[] = [currentSeason];
 const publicSections = [
   { title: "The robot", href: "/robot", type: "Robot", text: "Robot overview mechanisms architecture" },
   { title: "Engineering portfolio", href: "/engineering", type: "Engineering", text: "Design requirements CAD testing iterations" },
-  { title: "Seasons archive", href: "/seasons", type: "Seasons", text: "BioBuzz current season historical archive" },
+  { title: "Seasons archive", href: "/seasons", type: "Seasons", text: "BioBuzz current season historical archive BuzzerBots Hive Mind team seasons" },
   { title: "Build journal", href: "/journal", type: "Journal", text: "Build log experiments progress" },
   { title: "Software", href: "/software", type: "Software", text: "Programming controls code" },
   { title: "Seven Hills FTC teams", href: "/teams", type: "Teams", text: "BuzzerBots 23826 Hive Mind 36438" },

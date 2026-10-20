@@ -10,7 +10,7 @@ export default async function RecoveryPage({ searchParams }: { searchParams: Pro
       <div className="admin-card">
         <span className="section-tag">ACCOUNT RECOVERY</span>
         <h1>Set a new password<span className="period">.</span></h1>
-        <p>Choose a new password for your BuzzerBots team CMS account.</p>
+        <p>Choose a new password for your Seven Hills FTC CMS account.</p>
         <AuthRecoveryPasswordForm error={error} />
         <p><Link className="text-link" href="/admin/login">Back to team login →</Link></p>
       </div>

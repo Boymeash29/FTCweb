@@ -7,6 +7,7 @@ import { createClient, getCmsUser } from "@/lib/supabase/server";
 
 const seasonSchema = z.object({
   id: z.union([z.literal(""), z.string().uuid()]),
+  team_id: z.union([z.literal(""), z.string().uuid()]).default(""),
   name: z.string().trim().min(1).max(120),
   slug: z.string().trim().max(100),
   year_label: z.string().trim().max(40),
@@ -21,7 +22,7 @@ export async function saveSeason(formData: FormData) {
   const user = await getCmsUser();
   if (user?.role !== "admin") redirect("/admin/login?error=access");
   const parsed = seasonSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success || (parsed.data.start_date && parsed.data.end_date && parsed.data.end_date < parsed.data.start_date)) {
+  if (!parsed.success || (parsed.data.start_date && parsed.data.end_date && parsed.data.end_date < parsed.data.start_date) || (parsed.data.is_current === "true" && !parsed.data.team_id)) {
     redirect(`/admin/seasons?error=validation${formData.get("id") ? `&edit=${encodeURIComponent(String(formData.get("id")))}` : ""}`);
   }
   const slug = (parsed.data.slug || `${parsed.data.name} ${parsed.data.year_label}`).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -37,12 +38,15 @@ export async function saveSeason(formData: FormData) {
     p_end_date: parsed.data.end_date || null,
     p_summary: parsed.data.summary,
     p_is_current: parsed.data.is_current === "true",
-    p_status: parsed.data.status
+    p_status: parsed.data.status,
+    p_team_id: parsed.data.team_id || null
   });
   if (error || !data) {
     const query = error?.code === "23505" ? "duplicate" : "save";
     redirect(`/admin/seasons?error=${query}`);
   }
+  revalidatePath("/");
+  revalidatePath("/teams");
   revalidatePath("/seasons");
   revalidatePath(`/seasons/${slug}`);
   revalidatePath("/admin/seasons");
@@ -56,10 +60,10 @@ export async function restoreSeasonRevision(formData: FormData) {
   if (!parsed.success) redirect("/admin/seasons?error=revision");
   const client = await createClient();
   if (!client) redirect("/admin/login?error=setup");
-  const { data: revision } = await client.from("season_revisions").select("snapshot").eq("id", parsed.data.revisionId).eq("season_id", parsed.data.id).maybeSingle();
-  const snapshot = z.object({ name: z.string().min(1).max(120), slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), year_label: z.string().nullable(), start_date: z.string().nullable(), end_date: z.string().nullable(), summary: z.string(), is_current: z.boolean(), status: z.enum(["draft", "published", "archived"]) }).safeParse(revision?.snapshot);
+  const [{ data: revision }, { data: currentSeason }] = await Promise.all([client.from("season_revisions").select("snapshot").eq("id", parsed.data.revisionId).eq("season_id", parsed.data.id).maybeSingle(), client.from("seasons").select("team_id").eq("id", parsed.data.id).maybeSingle()]);
+  const snapshot = z.object({ name: z.string().min(1).max(120), slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), year_label: z.string().nullable(), start_date: z.string().nullable(), end_date: z.string().nullable(), summary: z.string(), is_current: z.boolean(), status: z.enum(["draft", "published", "archived"]), team_id: z.string().uuid().nullable().optional() }).safeParse(revision?.snapshot);
   if (!snapshot.success) redirect(`/admin/seasons/${parsed.data.id}?error=revision`);
-  const { error } = await client.rpc("save_cms_season", { p_id: parsed.data.id, p_name: snapshot.data.name, p_slug: snapshot.data.slug, p_year_label: snapshot.data.year_label ?? "", p_start_date: snapshot.data.start_date, p_end_date: snapshot.data.end_date, p_summary: snapshot.data.summary, p_is_current: snapshot.data.is_current, p_status: snapshot.data.status });
+  const { error } = await client.rpc("save_cms_season", { p_id: parsed.data.id, p_name: snapshot.data.name, p_slug: snapshot.data.slug, p_year_label: snapshot.data.year_label ?? "", p_start_date: snapshot.data.start_date, p_end_date: snapshot.data.end_date, p_summary: snapshot.data.summary, p_is_current: snapshot.data.is_current, p_status: snapshot.data.status, p_team_id: snapshot.data.team_id ?? currentSeason?.team_id ?? null });
   if (error) redirect(`/admin/seasons/${parsed.data.id}?error=save`);
   await client.from("audit_logs").insert({ actor_id: user.id, action: "revision_restored", entity_type: "season", entity_id: parsed.data.id, details: { revision_id: parsed.data.revisionId } });
   revalidatePath("/");

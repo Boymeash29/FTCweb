@@ -13,10 +13,11 @@ export default async function EditEntryPage({ params, searchParams }: { params: 
   const client = await createClient();
   if (!client) redirect("/admin/login?error=setup");
   const [{ data: entry }, { data: assets }] = await Promise.all([
-    client.from("content_entries").select("id,title,slug,type,summary,body,body_markdown,status,scheduled_at,published_at").eq("id", id).maybeSingle(),
+    client.from("content_entries").select("id,title,slug,type,team_id,summary,body,body_markdown,status,scheduled_at,published_at,season_id").eq("id", id).maybeSingle(),
     client.from("media_assets").select("id,title,mime_type,alt_text,is_public").order("created_at", { ascending: false }).limit(100)
   ]);
   if (!entry) notFound();
+  const [{ data: teams }, { data: seasons }] = await Promise.all([client.from("teams").select("id,name,number,slug").order("sort_order"), client.from("seasons").select("id,name,team_id,status").order("start_date", { ascending: false, nullsFirst: false })]);
   const { data: revisions } = user.role === "admin" ? await client.from("content_revisions").select("id,version,created_at").eq("entry_id", id).order("version", { ascending: false }).limit(20) : { data: [] };
   const { saved, restored } = await searchParams;
   return <main id="main-content" className="admin-shell"><section className="admin-dashboard admin-editor">
@@ -27,6 +28,8 @@ export default async function EditEntryPage({ params, searchParams }: { params: 
       <label>Title<input name="title" required minLength={3} maxLength={140} defaultValue={entry.title}/></label>
       <label>URL slug<input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" defaultValue={entry.slug}/></label>
       <label>Content type<select name="type" defaultValue={entry.type}><option value="news">News</option><option value="journal">Build journal</option><option value="project">Engineering project</option></select></label>
+      <label>Team<select name="team_id" defaultValue={entry.team_id ?? ""}><option value="">Shared / team not assigned</option>{teams?.map(team=><option key={team.id} value={team.id}>{team.name} · {team.number}</option>)}</select><small>Team ownership controls which team profile includes this entry.</small></label>
+      <label>Season (optional)<select name="season_id" defaultValue={entry.season_id ?? ""}><option value="">Not season-specific</option>{seasons?.map(season=><option key={season.id} value={season.id}>{season.name}{season.team_id?` · ${teams?.find(team=>team.id===season.team_id)?.name??"Team"}`:" · Shared"}{season.status==="published"?"":" · DRAFT"}</option>)}</select></label>
       <label>Summary<textarea name="summary" maxLength={500} rows={3} defaultValue={entry.summary}/></label>
       <SitePageBodyEditor source={entry.body_markdown ?? contentBlocksAsMarkdown(entry.body)} format="markdown" assets={assets ?? []} allowFormat={false}/>
       <label>State<select name="status" defaultValue={user.role === "admin" ? entry.status : "draft"}><option value="draft">Save as draft</option>{user.role === "admin" && <><option value="published">Published</option><option value="scheduled">Scheduled</option></>}</select></label>

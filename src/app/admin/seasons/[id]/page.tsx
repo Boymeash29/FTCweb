@@ -11,10 +11,11 @@ export default async function EditSeason({ params, searchParams }: { params: Pro
   if (!client) redirect("/admin/login?error=setup");
   const { id } = await params;
   const [{ data: season }, query] = await Promise.all([
-    client.from("seasons").select("id,name,slug,year_label,start_date,end_date,summary,is_current,status").eq("id", id).maybeSingle(),
+    client.from("seasons").select("id,name,slug,year_label,start_date,end_date,summary,is_current,status,team_id").eq("id", id).maybeSingle(),
     searchParams
   ]);
   if (!season) notFound();
+  const { data: teams } = await client.from("teams").select("id,name,number").order("sort_order");
   const { data: revisions } = await client.from("season_revisions").select("id,created_at").eq("season_id", id).order("created_at", { ascending: false }).limit(30);
   const errorText = query.error === "validation" ? "Check the season name, URL, and date range." : query.error === "duplicate" ? "That URL is already used by another season." : query.error === "revision" ? "That saved version could not be restored." : query.error ? "Could not save the season. Confirm the database migration is installed and try again." : "";
 
@@ -23,6 +24,7 @@ export default async function EditSeason({ params, searchParams }: { params: Pro
     {query.saved && <div className="notice-success">Season saved.</div>}{query.restored && <div className="notice-success">Earlier version restored. The version you replaced remains in history.</div>}{errorText && <div role="alert" className="form-error">{errorText}</div>}
     <form action={saveSeason} className="entry-form editor-form season-edit-form">
       <input type="hidden" name="id" value={season.id}/>
+      <label>Team<select name="team_id" defaultValue={season.team_id ?? ""}><option value="">Shared / not assigned</option>{teams?.map(team=><option key={team.id} value={team.id}>{team.name} · {team.number}</option>)}</select></label>
       <label>Season name<input name="name" required maxLength={120} defaultValue={season.name}/></label>
       <label>URL slug<input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" defaultValue={season.slug}/><small>Changing the URL updates the season’s public link.</small></label>
       <label>Year label<input name="year_label" maxLength={40} defaultValue={season.year_label ?? ""}/></label>

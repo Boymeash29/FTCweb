@@ -11,7 +11,7 @@ const empty = (title: string): SitePageSection[] => [{ title: "About this page",
 
 export const sitePageDefinitions: SitePageDefinition[] = [
   make("home", "/", "Home", "Seven Hills School · First Tech Challenge", "Built to figure it out", "Curious minds. Thoughtful engineering. One season at a time.", [
-    { title: "Who we are", body: "We’re the BuzzerBots, Seven Hills FTC Team 23826, turning questions into things that move. This is where we share the decisions, experiments, code, and lessons behind our work." },
+    { title: "Who we are", body: "We are Seven Hills FTC: BuzzerBots 23826 and Hive Mind 36438. Two independent teams share a community of curiosity, thoughtful engineering, and learning through every season." },
     { title: "Current season", body: "As designs are tested and decisions are made, the robot’s story will take shape here. We document the process, not just the finished product." },
     { title: "The work", body: "Follow the work from first question to field test." },
     { title: "Season archive", body: "Our archive keeps each season’s work in its own place, so what we learn stays findable." },
@@ -28,7 +28,7 @@ export const sitePageDefinitions: SitePageDefinition[] = [
   make("mechanisms", "/mechanisms", "Mechanisms", "Hardware engineering", "Mechanisms", "Each mechanism has its own requirements, design rationale, iterations, and test evidence.", empty("Mechanisms")),
   make("search", "/search", "Search", "Site search", "Find the work", "Search published team documentation and explore the archive."),
   make("seasons", "/seasons", "Seasons", "The archive", "Season by season", "Every season has its own robot, questions, tests, and lessons. The archive keeps that work connected without overwriting what came before.", [{ title: "Historical seasons", body: "Older season records will be added as the team supplies verified information and documentation." }]),
-  make("season-biobuzz", "/seasons/biobuzz", "BioBuzz season", "Season archive · Current", "BioBuzz", "The current season for Seven Hills FTC Team 23826. Robot details, events, results, and engineering documentation will be added when verified by the team.", [{ title: "Season content", body: "Explore the robot, engineering portfolio, software, journal, competitions, and outreach documentation." }]),
+  make("season-biobuzz", "/seasons/biobuzz", "BioBuzz season", "Season archive · Current", "BioBuzz", "A season archive for BuzzerBots 23826. Robot details, events, results, and engineering documentation are organized with the team that created them.", [{ title: "Season content", body: "Explore the robot, engineering portfolio, software, journal, competitions, and outreach documentation." }]),
   make("accessibility", "/accessibility", "Accessibility", pages.accessibility.eyebrow, pages.accessibility.title, pages.accessibility.intro, pages.accessibility.sections),
   make("contact", "/contact", "Contact", pages.contact.eyebrow, pages.contact.title, pages.contact.intro, pages.contact.sections),
   make("outreach", "/outreach", "Outreach", pages.outreach.eyebrow, pages.outreach.title, pages.outreach.intro, pages.outreach.sections),

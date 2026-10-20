@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { recordMediaAsset } from "@/app/admin/actions";
 
-type SeasonOption = { id: string; name: string };
+type SeasonOption = { id: string; name: string; teamName?: string };
 type SignedUpload = { uploadUrl: string; objectKey: string; contentType: string };
 
 export default function MediaUploader({ seasons, isAdmin }: { seasons: SeasonOption[]; isAdmin: boolean }) {
@@ -51,7 +51,7 @@ export default function MediaUploader({ seasons, isAdmin }: { seasons: SeasonOpt
   return <form action={submit} className="entry-form media-uploader">
     <label>File<input ref={fileRef} type="file" required accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,video/mp4,video/webm,application/zip,application/octet-stream,model/stl,model/obj,.step,.stp,.stl,.obj,.3mf,.dxf"/></label>
     <label>Title<input name="title" required maxLength={160} placeholder="Descriptive file title"/></label>
-    <label>Season<select name="season_id"><option value="">Not season-specific</option>{seasons.map(season=><option key={season.id} value={season.id}>{season.name}</option>)}</select></label>
+    <label>Season<select name="season_id"><option value="">Not season-specific</option>{seasons.map(season=><option key={season.id} value={season.id}>{season.name}{season.teamName ? ` · ${season.teamName}` : ""}</option>)}</select></label>
     <label>Caption<textarea name="caption" rows={2} maxLength={500}/></label>
     <label>Alt text<textarea name="alt_text" rows={2} maxLength={500} placeholder="Describe meaningful image content"/></label>
     <label>Photographer / creator credit<input name="creator_credit" maxLength={160}/></label>
