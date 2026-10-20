@@ -1,5 +1,5 @@
 -- Share the BioBuzz season and its attached CMS entries across both FTC teams.
--- Preserves the season's current/publication status, dates, and page content.
+-- Preserves the season's current/publication status and dates, while updating its shared description.
 begin;
 
 do $$
@@ -29,8 +29,17 @@ set team_id = null, updated_at = now()
 where season_id = (select id from public.seasons where slug = 'biobuzz')
   and team_id is not null;
 
+update public.site_pages
+set intro = 'BIOBUZZ™ presented by RTX is the 2026–2027 FIRST Tech Challenge game, part of the biodiversity-themed FIRST CANOPY™ season. Teams in two-team alliances compete on a 12-foot square field to simulate pollination by collecting and scoring Pollen (yellow balls) and Nectar (alliance-colored balls).',
+    updated_at = now()
+where page_key = 'season-biobuzz';
+
 select id, name, slug, team_id, is_current, status
 from public.seasons
 where slug = 'biobuzz';
+
+select page_key, intro
+from public.site_pages
+where page_key = 'season-biobuzz';
 
 commit;
