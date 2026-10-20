@@ -43,7 +43,7 @@ export async function saveSeason(formData: FormData) {
     p_team_id: parsed.data.team_id || null
   });
   if (error || !data) {
-    const query = error?.code === "23505" ? "duplicate" : "save";
+    const query = error?.code === "23505" ? "duplicate" : error?.code === "PGRST202" || error?.code === "42883" ? "migration" : "save";
     redirect(`/admin/seasons?error=${query}`);
   }
   revalidatePath("/");

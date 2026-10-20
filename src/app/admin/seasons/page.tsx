@@ -14,7 +14,7 @@ export default async function AdminSeasons({ searchParams }: { searchParams: Pro
     searchParams
   ]);
   const { data: teams } = await client.from("teams").select("id,name,number").order("sort_order");
-  const errorText = error === "validation" ? "Check the season name, URL, and date range." : error === "duplicate" ? "That URL is already used by another season." : error ? "Could not save the season. Confirm the database migration is installed and try again." : "";
+  const errorText = error === "validation" ? "Check the season name, URL, and date range." : error === "duplicate" ? "That URL is already used by another season." : error === "migration" ? "The team-aware season save function is missing from Supabase. Run supabase/repair-season-save-rpc.sql in the SQL Editor, then retry." : error ? "Could not save the season. Check the Supabase database configuration and try again." : "";
 
   return <main id="main-content" className="admin-shell"><section className="admin-dashboard">
     <div className="admin-top"><div><span className="section-tag">TEAM CMS / SEASONS</span><h1>Seasons<span className="period">.</span></h1><p><a href="/admin">← Dashboard</a> · Create a new season or add a past season to the archive.</p></div></div>
