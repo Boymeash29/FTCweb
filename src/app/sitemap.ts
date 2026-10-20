@@ -4,7 +4,7 @@ import { getSiteUrl } from "@/lib/site-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl().origin;
-  const paths = ["", "robot", "engineering", "mechanisms", "software", "team", "seasons", "seasons/biobuzz", "journal", "news", "projects", "outreach", "sponsors", "competitions", "contact", "privacy", "accessibility"];
+  const paths = ["", "teams", "teams/buzzerbots", "teams/hive-mind", "robot", "engineering", "mechanisms", "software", "seasons", "seasons/biobuzz", "journal", "news", "projects", "outreach", "sponsors", "competitions", "contact", "privacy", "accessibility"];
   const fixed = paths.map(path => ({
     url: path ? new URL(`/${path}`, base).toString() : base,
     lastModified: new Date(),

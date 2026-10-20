@@ -7,10 +7,10 @@ export const currentSeason: Season = {
 };
 
 export const navigation = [
+  { label: "Teams", href: "/teams" },
   { label: "Robot", href: "/robot" },
   { label: "Engineering", href: "/engineering" },
   { label: "Seasons", href: "/seasons" },
-  { label: "Team", href: "/team" },
   { label: "Journal", href: "/journal" }
 ];
 
@@ -65,7 +65,9 @@ const publicSections = [
   { title: "Seasons archive", href: "/seasons", type: "Seasons", text: "BioBuzz current season historical archive" },
   { title: "Build journal", href: "/journal", type: "Journal", text: "Build log experiments progress" },
   { title: "Software", href: "/software", type: "Software", text: "Programming controls code" },
-  { title: "Team 23826", href: "/team", type: "Team", text: "Seven Hills students mentors" }
+  { title: "Seven Hills FTC teams", href: "/teams", type: "Teams", text: "BuzzerBots 23826 Hive Mind 36438" },
+  { title: "BuzzerBots · Team 23826", href: "/teams/buzzerbots", type: "Team", text: "Seven Hills BuzzerBots" },
+  { title: "Hive Mind · Team 36438", href: "/teams/hive-mind", type: "Team", text: "Seven Hills Hive Mind" }
 ];
 
 export function searchPublicSections(query: string) {

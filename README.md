@@ -1,6 +1,6 @@
-# Seven Hills FTC · Team 23826
+# Seven Hills FTC Teams
 
-A Next.js website for the engineering portfolio of Seven Hills FIRST Tech Challenge Team 23826. Public copy is deliberately restrained: apart from the team number, school, FTC, and the supplied current season name BioBuzz, the repository does not invent team facts. Replace the clearly marked placeholders with approved team information before launch.
+A shared Next.js website for the Seven Hills School FIRST Tech Challenge teams: BuzzerBots (23826) and Hive Mind (36438). The public home page and team directory present both teams equally; each has its own profile route. Public copy uses only the team names and numbers supplied by the teams, and team-specific work should be associated with the correct team as content is added.
 
 ## Current implementation status
 

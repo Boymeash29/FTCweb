@@ -10,9 +10,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
-  title: { default: "BuzzerBots · Team 23826", template: "%s · BuzzerBots FTC" },
-  description: "The engineering portfolio of Seven Hills FIRST Tech Challenge Team 23826.",
-  openGraph: { title: "BuzzerBots · Team 23826", description: "Student engineering, documented.", type: "website" },
+  title: { default: "Seven Hills FTC Teams", template: "%s · Seven Hills FTC" },
+  description: "The FIRST Tech Challenge teams of Seven Hills School: BuzzerBots 23826 and Hive Mind 36438.",
+  openGraph: { title: "Seven Hills FTC Teams", description: "Student engineering, documented.", type: "website" },
   robots: { index: true, follow: true }
 };
 
