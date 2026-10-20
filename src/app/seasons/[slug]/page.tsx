@@ -39,7 +39,7 @@ export default async function SeasonPage({ params }: { params: Promise<{ slug: s
       <div className="eyebrow"><span className="eyebrow-line" />{season.current ? "Current season" : "Season archive"} · {season.year}</div>
       <h1>{page?.title ?? season.name}<span className="period">.</span></h1>
       <p className="lead">{page?.intro || season.summary}</p>
-      {season.teamName && season.teamSlug && <Link className="text-link season-team-link" href={`/teams/${season.teamSlug}`}>{season.teamName} · Team {season.teamNumber}<ArrowUpRight size={14} /></Link>}
+      {season.teamName && season.teamSlug ? <Link className="text-link season-team-link" href={`/teams/${season.teamSlug}`}>{season.teamName} · Team {season.teamNumber}<ArrowUpRight size={14} /></Link> : <div className="team-profile-shortcuts"><Link href="/teams/buzzerbots">BuzzerBots 23826 <ArrowUpRight size={14}/></Link><Link href="/teams/hive-mind">Hive Mind 36438 <ArrowUpRight size={14}/></Link></div>}
       {season.current && <span className="season-current-label"><i />CURRENT SEASON</span>}
       {(season.startDate || season.endDate) && <p className="season-date-range">{season.startDate || "Date TBD"}{season.endDate ? ` – ${season.endDate}` : ""}</p>}
     </section>

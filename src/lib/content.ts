@@ -3,7 +3,7 @@ export type Season = { id?: string; name: string; slug: string; year: string; su
 
 export const currentSeason: Season = {
   name: "BioBuzz", slug: "biobuzz", year: "Current", current: true,
-  summary: "The current season for Seven Hills FTC Team 23826. Robot details, events, results, and engineering documentation will be added when verified by the team.", teamName: "BuzzerBots", teamNumber: "23826", teamSlug: "buzzerbots"
+  summary: "A shared season archive for both Seven Hills FTC teams. Team-specific robots and engineering work remain on each team’s portfolio."
 };
 
 export const navigation = [

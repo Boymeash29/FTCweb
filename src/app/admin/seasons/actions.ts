@@ -23,7 +23,7 @@ export async function saveSeason(formData: FormData) {
   const user = await getCmsUser();
   if (user?.role !== "admin") redirect("/admin/login?error=access");
   const parsed = seasonSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success || (parsed.data.start_date && parsed.data.end_date && parsed.data.end_date < parsed.data.start_date) || (parsed.data.is_current === "true" && !parsed.data.team_id)) {
+  if (!parsed.success || (parsed.data.start_date && parsed.data.end_date && parsed.data.end_date < parsed.data.start_date)) {
     redirect(`/admin/seasons?error=validation${formData.get("id") ? `&edit=${encodeURIComponent(String(formData.get("id")))}` : ""}`);
   }
   const slug = (parsed.data.slug || `${parsed.data.name} ${parsed.data.year_label}`).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");

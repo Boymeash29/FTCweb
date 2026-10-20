@@ -24,7 +24,12 @@ export default async function TeamEngineeringDirectory({ kind = "all" }: { kind?
     const season = item.season ? seasons.find(value => value.id === item.season) : undefined;
     const ownerId = teamId ?? season?.teamId;
     const team = teams.find(value => value.id === ownerId);
-    if (!team) { if (!ownerId) sharedWork.push(item); return; }
+    if (!team) {
+      if (season && !season.teamId && !season.teamSlug) {
+        for (const sharedTeam of teams) workByTeam.get(sharedTeam.id ?? `slug:${sharedTeam.slug}`)?.push({ ...item, season: season.name });
+      } else if (!ownerId) sharedWork.push(item);
+      return;
+    }
     const key = team.id ?? `slug:${team.slug}`;
     workByTeam.get(key)?.push({ ...item, season: season?.name });
   };

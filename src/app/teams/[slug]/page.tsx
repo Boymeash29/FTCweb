@@ -13,10 +13,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function TeamPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params; const team = await getTeam(slug); if (!team) notFound();
   const client = await createClient();
-  const { data: seasons } = client && team.id ? await client.from("seasons").select("id,name,slug,year_label,start_date,is_current,summary").eq("team_id", team.id).eq("status", "published").order("start_date", { ascending: false, nullsFirst: false }) : { data: [] };
+  const { data: seasons } = client && team.id ? await client.from("seasons").select("id,name,slug,year_label,start_date,is_current,summary").or(`team_id.eq.${team.id},team_id.is.null`).eq("status", "published").order("start_date", { ascending: false, nullsFirst: false }) : { data: [] };
   const seasonIds = (seasons ?? []).map(season => season.id);
   const [entryResult, robotResult, projectResult, mechanismResult, softwareResult, outreachResult, membershipResult] = await Promise.all([
-    client && team.id ? client.from("published_content_entries").select("title,slug,type,summary,published_at").eq("team_id", team.id).order("published_at", { ascending: false }).limit(6) : Promise.resolve({ data: [] }),
+    client ? client.from("published_content_entries").select("title,slug,type,summary,published_at,team_id,season_id").order("published_at", { ascending: false }).limit(50) : Promise.resolve({ data: [] }),
     client && seasonIds.length ? client.from("robots").select("id,name,summary,season_id").in("season_id", seasonIds).eq("status", "published").order("name") : Promise.resolve({ data: [] }),
     client && seasonIds.length ? client.from("engineering_projects").select("id,title,slug,summary,season_id").in("season_id", seasonIds).eq("status", "published").order("title") : Promise.resolve({ data: [] }),
     client && seasonIds.length ? client.from("mechanisms").select("id,name,slug,purpose,season_id").in("season_id", seasonIds).eq("status", "published").order("sort_order") : Promise.resolve({ data: [] }),
@@ -25,6 +25,7 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
     client && seasonIds.length ? client.from("season_memberships").select("member_id,season_id,role_label").in("season_id", seasonIds) : Promise.resolve({ data: [] })
   ]);
   const memberIds = [...new Set((membershipResult.data ?? []).map(item => item.member_id))];
+  const teamEntries=(entryResult.data??[]).filter(entry=>entry.team_id===team.id || (!entry.team_id && !!entry.season_id && seasonIds.includes(entry.season_id)) ).slice(0,6);
   const { data: members } = client && memberIds.length ? await client.from("team_members").select("id,display_name,approved_role,is_mentor").in("id", memberIds).eq("status", "published").order("sort_order") : { data: [] };
   const memberById = new Map((members ?? []).map(member => [member.id, member]));
   const teamMembers = [...new Map((membershipResult.data ?? []).flatMap(membership => {
@@ -56,7 +57,7 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
     {teamMembers.length ? <section className="team-profile-section"><div className="team-profile-section-heading"><span className="section-tag">APPROVED ROSTER</span></div><div className="team-member-grid">{teamMembers.map(member=><article className="team-member-card" key={`${member.id}-${member.role}`}><b>{member.display_name}</b><span>{member.role}</span></article>)}</div></section> : null}
     <section className="team-profile-section">
       <div className="team-profile-section-heading"><span className="section-tag">LATEST FROM THE TEAM</span><Link href="/journal">All updates <ArrowUpRight size={14}/></Link></div>
-      {entryResult.data?.length ? <div className="team-profile-grid">{entryResult.data.map(entry=><Link className="team-profile-card" href={`/${entry.type === "project" ? "projects" : entry.type}/${entry.slug}`} key={entry.slug}><small>{entry.type.toUpperCase()}{entry.published_at ? ` · ${new Date(entry.published_at).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"})}` : ""}</small><b>{entry.title}<ArrowUpRight size={16}/></b><p>{entry.summary}</p></Link>)}</div> : <p className="team-profile-empty">Published updates, projects, and build notes for {team.name} will appear here.</p>}
+      {teamEntries.length ? <div className="team-profile-grid">{teamEntries.map(entry=><Link className="team-profile-card" href={`/${entry.type === "project" ? "projects" : entry.type}/${entry.slug}`} key={entry.slug}><small>{entry.type.toUpperCase()}{entry.published_at ? ` · ${new Date(entry.published_at).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"})}` : ""}</small><b>{entry.title}<ArrowUpRight size={16}/></b><p>{entry.summary}</p></Link>)}</div> : <p className="team-profile-empty">Published updates, projects, and build notes for {team.name} will appear here.</p>}
     </section>
     {outreachResult.data?.length ? <section className="team-profile-section"><div className="team-profile-section-heading"><span className="section-tag">COMMUNITY OUTREACH</span></div><div className="team-profile-grid">{outreachResult.data.map(event=><article className="team-profile-card" key={event.id}><small>{seasonName(event.season_id)}{event.event_date ? ` · ${new Date(event.event_date + "T12:00:00").toLocaleDateString("en-US", {year:"numeric",month:"short",day:"numeric"})}` : ""}</small><b>{event.name}</b>{event.description&&<p>{event.description}</p>}</article>)}</div></section> : null}
     <div className="team-profile-switch"><span>SEVEN HILLS FTC · EVERY TEAM, EQUAL PLACE</span><Link href="/teams">Explore all teams <ArrowUpRight size={14}/></Link></div>

@@ -16,7 +16,7 @@ export default async function SeasonsPage() {
     {page.bodyMarkdown && <section className="wrap"><SitePageBody source={page.bodyMarkdown} format={page.bodyFormat}/></section>}
     <section className="season-list wrap"><div className="season-list-head"><span>SEASON</span><span>STATUS</span><span>DETAILS</span></div>
       {seasons.map(season=><Link href={`/seasons/${season.slug}`} className="season-row" key={season.slug}>
-        <span><small>{season.teamName ? `${season.teamName} · Team ${season.teamNumber} · ${season.year}` : season.year}</small><b>{season.name}</b></span>
+        <span><small>{season.teamName ? `${season.teamName} · Team ${season.teamNumber} · ${season.year}` : `Shared · ${season.year}`}</small><b>{season.name}</b></span>
         <span className="current-status"><i/>{season.current ? "CURRENT SEASON" : "SEASON ARCHIVE"}</span>
         <span className="season-open">View season <ArrowUpRight size={16}/></span>
       </Link>)}

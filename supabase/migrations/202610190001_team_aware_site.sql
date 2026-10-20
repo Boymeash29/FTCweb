@@ -30,11 +30,15 @@ grant insert, update, delete on public.teams to authenticated;
 alter table public.seasons add column if not exists team_id uuid references public.teams(id) on delete restrict;
 alter table public.content_entries add column if not exists team_id uuid references public.teams(id) on delete restrict;
 
-update public.seasons set team_id = (select id from public.teams where slug = 'buzzerbots') where slug = 'biobuzz' and team_id is null;
+update public.seasons set team_id = null where slug = 'biobuzz' and team_id is not null;
+update public.content_entries e set team_id = null
+from public.seasons s
+where e.season_id = s.id and s.slug = 'biobuzz' and e.team_id is not null;
 update public.content_entries e set team_id = s.team_id from public.seasons s where e.season_id = s.id and e.team_id is null and s.team_id is not null;
 
 drop index if exists public.seasons_only_one_current;
 create unique index if not exists seasons_one_current_per_team on public.seasons(team_id) where is_current and team_id is not null;
+create unique index if not exists seasons_one_current_shared on public.seasons((true)) where is_current and team_id is null;
 create index if not exists seasons_team_status on public.seasons(team_id, status, start_date desc);
 create index if not exists content_entries_team_status on public.content_entries(team_id, status, published_at desc);
 create index if not exists robots_season_status on public.robots(season_id, status);
@@ -78,12 +82,12 @@ begin
   if p_team_id is not null and not exists (select 1 from public.teams where id = p_team_id) then
     raise exception 'Team not found' using errcode = '23503';
   end if;
-  if p_is_current and p_team_id is null then
-    raise exception 'A current season must belong to a team' using errcode = '22023';
-  end if;
   if p_is_current and p_team_id is not null then
     update public.seasons set is_current = false, updated_at = now()
       where team_id = p_team_id and is_current and (p_id is null or id <> p_id);
+  elsif p_is_current then
+    update public.seasons set is_current = false, updated_at = now()
+      where team_id is null and is_current and (p_id is null or id <> p_id);
   end if;
   if p_id is null then
     insert into public.seasons(name, slug, year_label, start_date, end_date, summary, is_current, status, team_id, updated_at)
@@ -234,7 +238,7 @@ begin
   return new;
 end $$;
 
--- Current seasons must belong to a team; shared seasons remain archive-only.
+-- Shared seasons can also be current and are shown in both team portfolios.
 create table if not exists public.team_revisions (
   id uuid primary key default gen_random_uuid(),
   team_id uuid not null references public.teams(id) on delete restrict,

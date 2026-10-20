@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getPublicSeasons } from "@/lib/seasons";
+import { getPublicSeasons, seasonBelongsToTeam } from "@/lib/seasons";
 import { getTeam } from "@/lib/teams";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -15,7 +15,7 @@ export default async function TeamRobotsPage({ params }: { params: Promise<{ slu
   const { slug } = await params;
   const [team, seasons, client] = await Promise.all([getTeam(slug), getPublicSeasons(), createClient()]);
   if (!team) notFound();
-  const teamSeasons = seasons.filter(season => season.teamSlug === team.slug || (team.id && season.teamId === team.id));
+  const teamSeasons = seasons.filter(season => seasonBelongsToTeam(season, team));
   const seasonIds = teamSeasons.flatMap(season => season.id ? [season.id] : []);
   const { data: robots } = client && seasonIds.length ? await client.from("robots").select("id,name,summary,season_id").in("season_id", seasonIds).eq("status", "published").order("name") : { data: [] };
   return <main id="main-content" className="team-profile wrap">

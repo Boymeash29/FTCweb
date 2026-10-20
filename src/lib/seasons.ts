@@ -1,6 +1,5 @@
 import { currentSeason, type Season, seasons as fallbackSeasons } from "@/lib/content";
 import { createClient } from "@/lib/supabase/server";
-import { teams } from "@/lib/teams";
 
 type SeasonRow = {
   id: string; name: string; slug: string; year_label: string | null;
@@ -11,17 +10,21 @@ type SeasonRow = {
 
 function toSeason(row: SeasonRow): Season {
   const team = Array.isArray(row.teams) ? row.teams[0] : row.teams;
-  const fallbackTeam = teams.find(item => item.slug === "buzzerbots");
   return {
     id: row.id, name: row.name, slug: row.slug,
     year: row.year_label || row.start_date?.slice(0, 4) || (row.is_current ? "Current" : "Year not set"),
     summary: row.summary || "Season details will be added as the team documents its work.",
     current: row.is_current, startDate: row.start_date, endDate: row.end_date, status: row.status,
     teamId: row.team_id ?? undefined,
-    teamName: team?.name ?? (row.slug === "biobuzz" ? fallbackTeam?.name : undefined),
-    teamNumber: team?.number ?? (row.slug === "biobuzz" ? fallbackTeam?.number : undefined),
-    teamSlug: team?.slug ?? (row.slug === "biobuzz" ? fallbackTeam?.slug : undefined)
+    teamName: team?.name,
+    teamNumber: team?.number,
+    teamSlug: team?.slug
   };
+}
+
+export function seasonBelongsToTeam(season: Season, team: { id?: string; slug: string }) {
+  if (season.teamId) return season.teamId === team.id;
+  return season.teamSlug ? season.teamSlug === team.slug : true;
 }
 const seasonSelect = "id,name,slug,year_label,start_date,end_date,summary,is_current,status,team_id,teams(name,number,slug)";
 
@@ -53,5 +56,5 @@ export async function getPublicSeason(slug: string): Promise<Season | null> {
     return data ? toSeason(data as unknown as SeasonRow) : null;
   }
   const fallback = fallbackSeasons.find(season => season.slug === slug);
-  return fallback ? { ...fallback, current: fallback.slug === currentSeason.slug, teamName: "BuzzerBots", teamNumber: "23826", teamSlug: "buzzerbots" } : null;
+  return fallback ? { ...fallback, current: fallback.slug === currentSeason.slug } : null;
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getPublicSeasons } from "@/lib/seasons";
+import { getPublicSeasons, seasonBelongsToTeam } from "@/lib/seasons";
 import { getTeam } from "@/lib/teams";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -15,16 +15,17 @@ export default async function TeamEngineeringPage({ params }: { params: Promise<
   const { slug } = await params;
   const [team, seasons, client] = await Promise.all([getTeam(slug), getPublicSeasons(), createClient()]);
   if (!team) notFound();
-  const teamSeasons = seasons.filter(season => season.teamSlug === team.slug || (team.id && season.teamId === team.id));
+  const teamSeasons = seasons.filter(season => seasonBelongsToTeam(season, team));
   const seasonIds = teamSeasons.flatMap(season => season.id ? [season.id] : []);
   const [projects, entries, mechanisms, software] = await Promise.all([
     client && seasonIds.length ? client.from("engineering_projects").select("id,title,slug,summary,season_id").in("season_id", seasonIds).eq("status", "published").order("title") : Promise.resolve({ data: [] }),
-    client && team.id ? client.from("published_content_entries").select("title,slug,summary,season_id").eq("team_id", team.id).eq("type", "project").order("published_at", { ascending: false }) : Promise.resolve({ data: [] }),
+    client ? client.from("published_content_entries").select("title,slug,summary,team_id,season_id").eq("type", "project").order("published_at", { ascending: false }) : Promise.resolve({ data: [] }),
     client && seasonIds.length ? client.from("mechanisms").select("id,name,slug,purpose,season_id").in("season_id", seasonIds).eq("status", "published").order("sort_order") : Promise.resolve({ data: [] }),
     client && seasonIds.length ? client.from("software_documents").select("id,title,slug,summary,category,season_id").in("season_id", seasonIds).eq("status", "published").order("title") : Promise.resolve({ data: [] })
   ]);
   const seasonName = (id: string | null) => teamSeasons.find(season => season.id === id)?.name ?? "Shared work";
-  const teamWideEntries=(entries.data??[]).filter(item=>!item.season_id);
+  const visibleEntries=(entries.data??[]).filter(item=>item.team_id===team.id || (!item.team_id && teamSeasons.some(season=>season.id===item.season_id && !season.teamId && !season.teamSlug)));
+  const teamWideEntries=visibleEntries.filter(item=>item.team_id===team.id&&!item.season_id);
   return <main id="main-content" className="team-profile wrap">
     <Link className="text-link" href={`/teams/${team.slug}`}><ArrowLeft size={15}/> {team.name} · Team {team.number}</Link>
     <header className="team-profile-heading"><span className="section-tag">ENGINEERING PORTFOLIO · TEAM {team.number}</span><h1>{team.name}<span className="period">.</span></h1><p>Design, build, test, and iteration from {team.name}, organized by season.</p><div className="team-profile-shortcuts"><Link href={`/teams/${team.slug}/robot`}>Robot archive <ArrowUpRight size={14}/></Link><Link href="/teams">Both teams <ArrowUpRight size={14}/></Link></div></header>
@@ -32,7 +33,7 @@ export default async function TeamEngineeringPage({ params }: { params: Promise<
       const seasonProjects=(projects.data??[]).filter(item=>item.season_id===season.id);
       const seasonMechanisms=(mechanisms.data??[]).filter(item=>item.season_id===season.id);
       const seasonSoftware=(software.data??[]).filter(item=>item.season_id===season.id);
-      const seasonEntries=(entries.data??[]).filter(item=>item.season_id===season.id);
+      const seasonEntries=visibleEntries.filter(item=>item.season_id===season.id);
       const hasWork=seasonProjects.length||seasonMechanisms.length||seasonSoftware.length||seasonEntries.length;
       return <section className="team-profile-section" key={season.slug}><div className="team-profile-section-heading"><span className="section-tag">{season.current?"CURRENT SEASON":"SEASON ARCHIVE"} · {season.year}</span><Link href={`/seasons/${season.slug}`}>{season.name} archive <ArrowUpRight size={14}/></Link></div><h2 className="team-directory-heading">{season.name}</h2>
         {hasWork ? <div className="team-profile-grid">
