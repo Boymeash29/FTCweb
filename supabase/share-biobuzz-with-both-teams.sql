@@ -19,7 +19,9 @@ begin
 end $$;
 
 update public.seasons
-set team_id = null, updated_at = now()
+set team_id = null,
+    summary = 'BIOBUZZ™ presented by RTX is the 2026–2027 FIRST Tech Challenge game, part of the biodiversity-themed FIRST CANOPY™ season. Teams in two-team alliances compete on a 12-foot square field to simulate pollination by collecting and scoring Pollen (yellow balls) and Nectar (alliance-colored balls).',
+    updated_at = now()
 where slug = 'biobuzz';
 
 update public.content_entries

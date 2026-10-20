@@ -3,7 +3,7 @@ export type Season = { id?: string; name: string; slug: string; year: string; su
 
 export const currentSeason: Season = {
   name: "BioBuzz", slug: "biobuzz", year: "Current", current: true,
-  summary: "A shared season archive for both Seven Hills FTC teams. Team-specific robots and engineering work remain on each team’s portfolio."
+  summary: "BIOBUZZ™ presented by RTX is the 2026–2027 FIRST Tech Challenge game, part of the biodiversity-themed FIRST CANOPY™ season. Teams in two-team alliances compete on a 12-foot square field to simulate pollination by collecting and scoring Pollen (yellow balls) and Nectar (alliance-colored balls)."
 };
 
 export const navigation = [

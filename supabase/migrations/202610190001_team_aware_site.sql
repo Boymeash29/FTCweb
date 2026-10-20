@@ -30,7 +30,10 @@ grant insert, update, delete on public.teams to authenticated;
 alter table public.seasons add column if not exists team_id uuid references public.teams(id) on delete restrict;
 alter table public.content_entries add column if not exists team_id uuid references public.teams(id) on delete restrict;
 
-update public.seasons set team_id = null where slug = 'biobuzz' and team_id is not null;
+update public.seasons
+set team_id = null,
+    summary = 'BIOBUZZ™ presented by RTX is the 2026–2027 FIRST Tech Challenge game, part of the biodiversity-themed FIRST CANOPY™ season. Teams in two-team alliances compete on a 12-foot square field to simulate pollination by collecting and scoring Pollen (yellow balls) and Nectar (alliance-colored balls).'
+where slug = 'biobuzz' and (team_id is not null or summary is distinct from 'BIOBUZZ™ presented by RTX is the 2026–2027 FIRST Tech Challenge game, part of the biodiversity-themed FIRST CANOPY™ season. Teams in two-team alliances compete on a 12-foot square field to simulate pollination by collecting and scoring Pollen (yellow balls) and Nectar (alliance-colored balls).');
 update public.content_entries e set team_id = null
 from public.seasons s
 where e.season_id = s.id and s.slug = 'biobuzz' and e.team_id is not null;
