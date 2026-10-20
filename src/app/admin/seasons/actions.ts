@@ -14,7 +14,8 @@ const seasonSchema = z.object({
   start_date: z.string().refine(value => value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value)),
   end_date: z.string().refine(value => value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value)),
   summary: z.string().trim().max(2000),
-  is_current: z.enum(["true", "false"]),
+  // Browsers omit unchecked checkboxes from FormData; treat omission as false.
+  is_current: z.enum(["true", "false"]).default("false"),
   status: z.enum(["draft", "published", "archived"])
 });
 
