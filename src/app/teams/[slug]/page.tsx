@@ -15,9 +15,12 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
   const client = await createClient();
   const { data: seasons } = client && team.id ? await client.from("seasons").select("id,name,slug,year_label,start_date,is_current,summary").eq("team_id", team.id).eq("status", "published").order("start_date", { ascending: false, nullsFirst: false }) : { data: [] };
   const seasonIds = (seasons ?? []).map(season => season.id);
-  const [entryResult, robotResult, outreachResult, membershipResult] = await Promise.all([
+  const [entryResult, robotResult, projectResult, mechanismResult, softwareResult, outreachResult, membershipResult] = await Promise.all([
     client && team.id ? client.from("published_content_entries").select("title,slug,type,summary,published_at").eq("team_id", team.id).order("published_at", { ascending: false }).limit(6) : Promise.resolve({ data: [] }),
     client && seasonIds.length ? client.from("robots").select("id,name,summary,season_id").in("season_id", seasonIds).eq("status", "published").order("name") : Promise.resolve({ data: [] }),
+    client && seasonIds.length ? client.from("engineering_projects").select("id,title,slug,summary,season_id").in("season_id", seasonIds).eq("status", "published").order("title") : Promise.resolve({ data: [] }),
+    client && seasonIds.length ? client.from("mechanisms").select("id,name,slug,purpose,season_id").in("season_id", seasonIds).eq("status", "published").order("sort_order") : Promise.resolve({ data: [] }),
+    client && seasonIds.length ? client.from("software_documents").select("id,title,slug,summary,category,season_id").in("season_id", seasonIds).eq("status", "published").order("title") : Promise.resolve({ data: [] }),
     client && seasonIds.length ? client.from("outreach_events").select("id,name,event_date,description,season_id").in("season_id", seasonIds).eq("status", "published").order("event_date", { ascending: false }).limit(6) : Promise.resolve({ data: [] }),
     client && seasonIds.length ? client.from("season_memberships").select("member_id,season_id,role_label").in("season_id", seasonIds) : Promise.resolve({ data: [] })
   ]);
@@ -36,12 +39,20 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
       <span className="section-tag">SEVEN HILLS SCHOOL · FIRST TECH CHALLENGE</span>
       <h1>{team.name}<span className="period">.</span></h1>
       <p>Team number <strong>{team.number}</strong></p><p className="team-summary">{team.summary}</p>
+      <nav className="team-profile-shortcuts" aria-label={`${team.name} pages`}><Link href={`/teams/${team.slug}/robot`}>Robot archive <ArrowUpRight size={14}/></Link><Link href={`/teams/${team.slug}/engineering`}>Engineering portfolio <ArrowUpRight size={14}/></Link><Link href="/teams">Both teams <ArrowUpRight size={14}/></Link></nav>
     </div>
     <section className="team-profile-section">
       <div className="team-profile-section-heading"><span className="section-tag">SEASON ARCHIVE</span><Link href="/seasons">All seasons <ArrowUpRight size={14}/></Link></div>
       {seasons?.length ? <div className="team-profile-grid">{seasons.map(season=><Link className="team-profile-card" href={`/seasons/${season.slug}`} key={season.id}><small>{season.is_current ? "CURRENT SEASON" : season.year_label || season.start_date?.slice(0,4) || "ARCHIVE"}</small><b>{season.name}<ArrowUpRight size={16}/></b>{season.summary && <p>{season.summary}</p>}</Link>)}</div> : <p className="team-profile-empty">Season records for {team.name} will appear here as they are added.</p>}
     </section>
-    {robotResult.data?.length ? <section className="team-profile-section"><div className="team-profile-section-heading"><span className="section-tag">ROBOTS</span></div><div className="team-profile-grid">{robotResult.data.map(robot=><Link className="team-profile-card" href={seasons?.find(season=>season.id===robot.season_id) ? `/seasons/${seasons.find(season=>season.id===robot.season_id)?.slug}` : `/teams/${team.slug}`} key={robot.id}><small>{seasonName(robot.season_id)}</small><b>{robot.name}<ArrowUpRight size={16}/></b>{robot.summary && <p>{robot.summary}</p>}</Link>)}</div></section> : null}
+    <section className="team-profile-section" id="robots"><div className="team-profile-section-heading"><span className="section-tag">ROBOTS</span><Link href="/robot">Both teams’ robots <ArrowUpRight size={14}/></Link></div>{robotResult.data?.length ? <div className="team-profile-grid">{robotResult.data.map(robot=><Link className="team-profile-card" href={seasons?.find(season=>season.id===robot.season_id) ? `/seasons/${seasons.find(season=>season.id===robot.season_id)?.slug}` : `/teams/${team.slug}`} key={robot.id}><small>{seasonName(robot.season_id)}</small><b>{robot.name}<ArrowUpRight size={16}/></b>{robot.summary && <p>{robot.summary}</p>}</Link>)}</div> : <p className="team-profile-empty">Published robot profiles for {team.name} will appear here, organized by season.</p>}</section>
+    <section className="team-profile-section" id="engineering"><div className="team-profile-section-heading"><span className="section-tag">ENGINEERING PORTFOLIO</span><Link href="/engineering">Both teams’ work <ArrowUpRight size={14}/></Link></div>
+      {projectResult.data?.length || mechanismResult.data?.length || softwareResult.data?.length ? <div className="team-profile-grid">
+        {(projectResult.data ?? []).map(item=><Link className="team-profile-card" href={`/engineering/projects/${item.slug}`} key={`project-${item.id}`}><small>ENGINEERING PROJECT · {seasonName(item.season_id)}</small><b>{item.title}<ArrowUpRight size={16}/></b>{item.summary&&<p>{item.summary}</p>}</Link>)}
+        {(mechanismResult.data ?? []).map(item=><Link className="team-profile-card" href={`/mechanisms/${item.slug}`} key={`mechanism-${item.id}`}><small>MECHANISM · {seasonName(item.season_id)}</small><b>{item.name}<ArrowUpRight size={16}/></b>{item.purpose&&<p>{item.purpose}</p>}</Link>)}
+        {(softwareResult.data ?? []).map(item=><Link className="team-profile-card" href={`/software/${item.slug}`} key={`software-${item.id}`}><small>SOFTWARE · {item.category} · {seasonName(item.season_id)}</small><b>{item.title}<ArrowUpRight size={16}/></b>{item.summary&&<p>{item.summary}</p>}</Link>)}
+      </div> : <p className="team-profile-empty">Published engineering projects, mechanisms, and software documentation for {team.name} will appear here.</p>}
+    </section>
     {teamMembers.length ? <section className="team-profile-section"><div className="team-profile-section-heading"><span className="section-tag">APPROVED ROSTER</span></div><div className="team-member-grid">{teamMembers.map(member=><article className="team-member-card" key={`${member.id}-${member.role}`}><b>{member.display_name}</b><span>{member.role}</span></article>)}</div></section> : null}
     <section className="team-profile-section">
       <div className="team-profile-section-heading"><span className="section-tag">LATEST FROM THE TEAM</span><Link href="/journal">All updates <ArrowUpRight size={14}/></Link></div>

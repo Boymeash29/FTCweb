@@ -1,0 +1,16 @@
+.team-profile-shortcuts{display:flex;flex-wrap:wrap;gap:18px;margin-top:22px}
+.team-profile-shortcuts a{display:inline-flex;align-items:center;gap:7px;color:var(--yellow);font-size:11px;font-weight:700}
+.team-directory-heading{font-size:clamp(27px,4vw,38px);font-weight:500;letter-spacing:-.055em;margin:12px 0 18px}
+.home-current-seasons{padding-block:24px 58px}
+.team-work-directory{padding-bottom:55px}
+.engineering-team-selector{padding-block:35px 20px}
+.engineering-team-selector>div:first-child{margin-bottom:20px}
+.engineering-team-selector h2{font-size:clamp(30px,4vw,44px);font-weight:500;letter-spacing:-.06em;margin:8px 0}
+.engineering-team-selector p{color:var(--muted);font-size:13px;margin:0}
+.engineering-team-selector .team-card{min-height:135px}
+.team-work-group{padding:42px 0;border-bottom:1px solid var(--line)}
+.team-work-group>header{margin-bottom:22px}
+.team-work-group>header h2{font-size:clamp(34px,5vw,50px);font-weight:500;letter-spacing:-.065em;margin:9px 0}
+.team-work-group>header p{color:var(--muted);font-size:13px;margin:0 0 12px}
+.team-work-group .team-profile-grid{margin-top:20px}
+@media(max-width:600px){.team-profile-shortcuts{gap:12px}.home-current-seasons{padding-block:18px 40px}.team-work-group{padding:30px 0}}

@@ -27,12 +27,12 @@ export const pages: Record<string, { eyebrow: string; title: string; intro: stri
     { title: "Hardware", body: "Mechanism documentation is organized by purpose, requirements, design rationale, iterations, and test evidence." },
     { title: "Software", body: "Architecture, subsystems, autonomous routines, controls, and debugging notes can be documented without assuming any particular technology." }
   ] },
-  team: { eyebrow: "The people behind the work", title: "The BuzzerBots", intro: "BuzzerBots 23826 and Hive Mind 36438 are two distinct Seven Hills FTC teams, each bringing students together to design, build, program, compete, and share their work.", sections: [
+  team: { eyebrow: "The people behind the work", title: "The teams", intro: "BuzzerBots 23826 and Hive Mind 36438 are two distinct Seven Hills FTC teams, each bringing students together to design, build, program, compete, and share their work.", sections: [
     { title: "Students", body: "Approved member names and roles will be added here. Student information and photographs require team approval." },
     { title: "Mentors", body: "Faculty mentors and coaches will be listed when the team provides approved names and roles." }
   ] },
-  sponsors: { eyebrow: "Support", title: "Sponsors", intro: "Organizations that make our work possible.", sections: [
-    { title: "Partner with the team", body: "Sponsor names and logos will appear here after support and logo usage have been confirmed." }
+  sponsors: { eyebrow: "Support", title: "Sponsors", intro: "Organizations that support the Seven Hills FTC teams.", sections: [
+    { title: "Partner with a team", body: "Sponsor names and logos will appear under the team and season they support after support and logo usage have been confirmed." }
   ] },
   outreach: { eyebrow: "Community", title: "Outreach", intro: "Events, learning, and connections beyond the workshop.", sections: [
     { title: "Our community work", body: "Approved outreach events, photographs, and verified outcomes will be documented here." }
@@ -67,7 +67,11 @@ const publicSections = [
   { title: "Software", href: "/software", type: "Software", text: "Programming controls code" },
   { title: "Seven Hills FTC teams", href: "/teams", type: "Teams", text: "BuzzerBots 23826 Hive Mind 36438" },
   { title: "BuzzerBots · Team 23826", href: "/teams/buzzerbots", type: "Team", text: "Seven Hills BuzzerBots" },
-  { title: "Hive Mind · Team 36438", href: "/teams/hive-mind", type: "Team", text: "Seven Hills Hive Mind" }
+  { title: "BuzzerBots robot archive", href: "/teams/buzzerbots/robot", type: "Robot", text: "Team 23826 robots" },
+  { title: "BuzzerBots engineering portfolio", href: "/teams/buzzerbots/engineering", type: "Engineering", text: "Team 23826 projects mechanisms software" },
+  { title: "Hive Mind · Team 36438", href: "/teams/hive-mind", type: "Team", text: "Seven Hills Hive Mind" },
+  { title: "Hive Mind robot archive", href: "/teams/hive-mind/robot", type: "Robot", text: "Team 36438 robots" },
+  { title: "Hive Mind engineering portfolio", href: "/teams/hive-mind/engineering", type: "Engineering", text: "Team 36438 projects mechanisms software" }
 ];
 
 export function searchPublicSections(query: string) {

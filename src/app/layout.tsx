@@ -6,6 +6,7 @@ import AuthRecoveryRedirect from "@/components/AuthRecoveryRedirect";
 import { getCmsUser } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
+import "./team-pages.css";
 
 
 export const metadata: Metadata = {

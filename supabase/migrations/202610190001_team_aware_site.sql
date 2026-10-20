@@ -14,12 +14,15 @@ create table if not exists public.teams (
 insert into public.teams(slug, name, number, summary, status, sort_order)
 values
   ('buzzerbots', 'BuzzerBots', '23826', 'Seven Hills FTC Team 23826.', 'published', 10),
-  ('hive-mind', 'Hive Mind', '36438', 'Seven Hills FTC Team 36438.', 'published', 20)
-on conflict (slug) do update set name = excluded.name, number = excluded.number, updated_at = now();
+  ('hive-mind', 'Hive Mind', '36438', 'Seven Hills FTC Team 36438.', 'published', 10)
+on conflict (slug) do update set name = excluded.name, number = excluded.number, sort_order = excluded.sort_order, updated_at = now();
 
 alter table public.teams enable row level security;
+drop policy if exists teams_cms_read on public.teams;
 create policy teams_cms_read on public.teams for select to authenticated using (public.is_cms_user());
+drop policy if exists teams_admin_manage on public.teams;
 create policy teams_admin_manage on public.teams for all to authenticated using (public.is_cms_admin()) with check (public.is_cms_admin());
+drop policy if exists teams_public_read on public.teams;
 create policy teams_public_read on public.teams for select to anon, authenticated using (status = 'published');
 grant select on public.teams to anon, authenticated;
 grant insert, update, delete on public.teams to authenticated;
@@ -30,10 +33,14 @@ alter table public.content_entries add column if not exists team_id uuid referen
 update public.seasons set team_id = (select id from public.teams where slug = 'buzzerbots') where slug = 'biobuzz' and team_id is null;
 update public.content_entries e set team_id = s.team_id from public.seasons s where e.season_id = s.id and e.team_id is null and s.team_id is not null;
 
- drop index if exists public.seasons_only_one_current;
+drop index if exists public.seasons_only_one_current;
 create unique index if not exists seasons_one_current_per_team on public.seasons(team_id) where is_current and team_id is not null;
 create index if not exists seasons_team_status on public.seasons(team_id, status, start_date desc);
 create index if not exists content_entries_team_status on public.content_entries(team_id, status, published_at desc);
+create index if not exists robots_season_status on public.robots(season_id, status);
+create index if not exists engineering_projects_season_status on public.engineering_projects(season_id, status);
+create index if not exists mechanisms_season_status on public.mechanisms(season_id, status, sort_order);
+create index if not exists software_documents_season_status on public.software_documents(season_id, status);
 
 create or replace function public.save_season_revision()
 returns trigger language plpgsql security definer set search_path = '' as $$
@@ -53,6 +60,7 @@ end $$;
 
 -- Replace the CMS RPC with a team-aware version while keeping all validation and revision behavior.
 drop function if exists public.save_cms_season(uuid, text, text, text, date, date, text, boolean, public.content_status);
+drop function if exists public.save_cms_season(uuid, text, text, text, date, date, text, boolean, public.content_status, uuid);
 create function public.save_cms_season(
   p_id uuid, p_name text, p_slug text, p_year_label text, p_start_date date,
   p_end_date date, p_summary text, p_is_current boolean,
@@ -94,7 +102,7 @@ revoke all on function public.save_cms_season(uuid, text, text, text, date, date
 grant execute on function public.save_cms_season(uuid, text, text, text, date, date, text, boolean, public.content_status, uuid) to authenticated;
 -- Expose team ownership through the already-public, published-only content view.
 create or replace view public.published_content_entries with (security_invoker = true) as
-  select id, type, season_id, title, slug, summary, body, published_at, created_at, updated_at, team_id
+  select id, type, season_id, title, slug, summary, body, published_at, created_at, updated_at, body_markdown, team_id
   from public.content_entries where status = 'published' and published_at <= now();
 
 grant select on public.published_content_entries to anon, authenticated;
@@ -128,44 +136,86 @@ begin
   ), coalesce(new.updated_by, new.author_id, auth.uid()));
   return new;
 end $$;
+
+-- Keep mechanism history attached to the season/team that owns the work.
+create or replace function public.save_mechanism_revision()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.mechanism_revisions(mechanism_id, snapshot, author_id)
+  values (old.id, jsonb_build_object(
+    'name', old.name, 'purpose', old.purpose, 'requirements', old.requirements,
+    'design_rationale', old.design_rationale, 'implementation', old.implementation,
+    'testing', old.testing, 'body_markdown', old.body_markdown, 'status', old.status,
+    'published_at', old.published_at, 'season_id', old.season_id
+  ), new.updated_by);
+  return new;
+end $$;
+
+create or replace function public.save_initial_mechanism_revision()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.mechanism_revisions(mechanism_id, snapshot, author_id)
+  values (new.id, jsonb_build_object(
+    'name', new.name, 'purpose', new.purpose, 'requirements', new.requirements,
+    'design_rationale', new.design_rationale, 'implementation', new.implementation,
+    'testing', new.testing, 'body_markdown', new.body_markdown, 'status', new.status,
+    'published_at', new.published_at, 'season_id', new.season_id
+  ), new.updated_by);
+  return new;
+end $$;
+
+update public.mechanism_revisions r
+set snapshot = r.snapshot || jsonb_build_object('season_id', m.season_id)
+from public.mechanisms m
+where m.id = r.mechanism_id and not (r.snapshot ? 'season_id');
 -- Public access is limited to records explicitly marked for publication.
+drop policy if exists robots_published_public_read on public.robots;
 create policy robots_published_public_read on public.robots for select to anon, authenticated
   using (status = 'published' and published_at is not null and published_at <= now());
 grant select on public.robots to anon, authenticated;
 
+drop policy if exists engineering_projects_published_public_read on public.engineering_projects;
 create policy engineering_projects_published_public_read on public.engineering_projects for select to anon, authenticated
   using (status = 'published' and published_at is not null and published_at <= now());
 grant select on public.engineering_projects to anon, authenticated;
 
+drop policy if exists software_documents_published_public_read on public.software_documents;
 create policy software_documents_published_public_read on public.software_documents for select to anon, authenticated
   using (status = 'published' and published_at is not null and published_at <= now());
 grant select on public.software_documents to anon, authenticated;
 
+drop policy if exists competition_events_published_public_read on public.competition_events;
 create policy competition_events_published_public_read on public.competition_events for select to anon, authenticated
   using (status = 'published' and published_at is not null and published_at <= now());
 grant select on public.competition_events to anon, authenticated;
 
+drop policy if exists competition_results_verified_public_read on public.competition_results;
 create policy competition_results_verified_public_read on public.competition_results for select to anon, authenticated
   using (verified and exists (select 1 from public.competition_events e where e.id = event_id and e.status = 'published' and e.published_at is not null and e.published_at <= now()));
 grant select on public.competition_results to anon, authenticated;
 
+drop policy if exists outreach_events_published_public_read on public.outreach_events;
 create policy outreach_events_published_public_read on public.outreach_events for select to anon, authenticated
   using (status = 'published' and published_at is not null and published_at <= now());
 grant select on public.outreach_events to anon, authenticated;
 
+drop policy if exists team_members_published_public_read on public.team_members;
 create policy team_members_published_public_read on public.team_members for select to anon, authenticated
   using (status = 'published');
 grant select on public.team_members to anon, authenticated;
 
+drop policy if exists season_memberships_published_public_read on public.season_memberships;
 create policy season_memberships_published_public_read on public.season_memberships for select to anon, authenticated
   using (exists (select 1 from public.seasons s where s.id = season_id and s.status = 'published')
     and exists (select 1 from public.team_members m where m.id = member_id and m.status = 'published'));
 grant select on public.season_memberships to anon, authenticated;
 
+drop policy if exists sponsors_published_public_read on public.sponsors;
 create policy sponsors_published_public_read on public.sponsors for select to anon, authenticated
   using (status = 'published');
 grant select on public.sponsors to anon, authenticated;
 
+drop policy if exists season_sponsors_published_public_read on public.season_sponsors;
 create policy season_sponsors_published_public_read on public.season_sponsors for select to anon, authenticated
   using (exists (select 1 from public.seasons s where s.id = season_id and s.status = 'published')
     and exists (select 1 from public.sponsors sp where sp.id = sponsor_id and sp.status = 'published'));
@@ -185,7 +235,7 @@ begin
 end $$;
 
 -- Current seasons must belong to a team; shared seasons remain archive-only.
-create table public.team_revisions (
+create table if not exists public.team_revisions (
   id uuid primary key default gen_random_uuid(),
   team_id uuid not null references public.teams(id) on delete restrict,
   snapshot jsonb not null,
@@ -193,6 +243,7 @@ create table public.team_revisions (
   created_at timestamptz not null default now()
 );
 alter table public.team_revisions enable row level security;
+drop policy if exists team_revisions_admin_read on public.team_revisions;
 create policy team_revisions_admin_read on public.team_revisions for select to authenticated using (public.is_cms_admin());
 grant select on public.team_revisions to authenticated;
 
@@ -209,6 +260,7 @@ begin
   end if;
   return new;
 end $$;
+drop trigger if exists teams_revision_before_update on public.teams;
 create trigger teams_revision_before_update before update on public.teams
   for each row execute function public.save_team_revision();
 
@@ -222,6 +274,7 @@ begin
   ), auth.uid());
   return new;
 end $$;
+drop trigger if exists teams_revision_after_insert on public.teams;
 create trigger teams_revision_after_insert after insert on public.teams
   for each row execute function public.save_initial_team_revision();
 

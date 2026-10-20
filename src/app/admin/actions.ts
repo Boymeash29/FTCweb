@@ -20,7 +20,7 @@ const sitePageSchema = z.object({ key: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+
 export async function updateMechanism(formData: FormData) {
   const user = await getCmsUser();
   if (user?.role !== "admin") redirect("/admin/login?error=access");
-  const parsed = z.object({ slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), name: z.string().trim().min(1).max(140), purpose: z.string().trim().max(2000), requirements: z.string().max(20000), design_rationale: z.string().trim().max(5000), implementation: z.string().max(20000), testing: z.string().max(20000), body_markdown: z.string().max(100000), status: z.enum(["draft", "published", "archived"]) }).safeParse(Object.fromEntries(formData));
+  const parsed = z.object({ slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), season_id: z.string().uuid(), name: z.string().trim().min(1).max(140), purpose: z.string().trim().max(2000), requirements: z.string().max(20000), design_rationale: z.string().trim().max(5000), implementation: z.string().max(20000), testing: z.string().max(20000), body_markdown: z.string().max(100000), status: z.enum(["draft", "published", "archived"]) }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/admin/mechanisms?error=validation");
   let requirements: unknown; let implementation: unknown; let testing: unknown;
   try { requirements=JSON.parse(parsed.data.requirements); implementation=JSON.parse(parsed.data.implementation); testing=JSON.parse(parsed.data.testing); } catch { redirect(`/admin/mechanisms/${parsed.data.slug}?error=validation`); }
@@ -28,7 +28,9 @@ export async function updateMechanism(formData: FormData) {
   if (!jsonValue.safeParse(requirements).success || !jsonValue.safeParse(implementation).success || !jsonValue.safeParse(testing).success) redirect(`/admin/mechanisms/${parsed.data.slug}?error=validation`);
   const supabase = await createClient();
   if (!supabase) redirect("/admin/login?error=setup");
-  const { error }=await supabase.from("mechanisms").update({ name:parsed.data.name,purpose:parsed.data.purpose,requirements,design_rationale:parsed.data.design_rationale,implementation,testing,body_markdown:parsed.data.body_markdown,updated_by:user.id,status:parsed.data.status,published_at:parsed.data.status==="published"?new Date().toISOString():null,updated_at:new Date().toISOString() }).eq("slug",parsed.data.slug);
+  const { data: season } = await supabase.from("seasons").select("id").eq("id", parsed.data.season_id).maybeSingle();
+  if (!season) redirect(`/admin/mechanisms/${parsed.data.slug}?error=season`);
+  const { error }=await supabase.from("mechanisms").update({ season_id:parsed.data.season_id,name:parsed.data.name,purpose:parsed.data.purpose,requirements,design_rationale:parsed.data.design_rationale,implementation,testing,body_markdown:parsed.data.body_markdown,updated_by:user.id,status:parsed.data.status,published_at:parsed.data.status==="published"?new Date().toISOString():null,updated_at:new Date().toISOString() }).eq("slug",parsed.data.slug);
   if (error) redirect(`/admin/mechanisms/${parsed.data.slug}?error=save`);
   revalidatePath(`/mechanisms/${parsed.data.slug}`); revalidatePath("/mechanisms"); revalidatePath("/admin/mechanisms");
   redirect(`/admin/mechanisms/${parsed.data.slug}?saved=1`);
@@ -91,12 +93,12 @@ export async function restoreMechanismRevision(formData: FormData) {
   if (!parsed.success) redirect("/admin/mechanisms?error=revision");
   const supabase = await createClient();
   if (!supabase) redirect("/admin/login?error=setup");
-  const { data: mechanism } = await supabase.from("mechanisms").select("id").eq("slug", parsed.data.slug).maybeSingle();
+  const { data: mechanism } = await supabase.from("mechanisms").select("id,season_id").eq("slug", parsed.data.slug).maybeSingle();
   if (!mechanism) redirect("/admin/mechanisms?error=revision");
   const { data: revision } = await supabase.from("mechanism_revisions").select("snapshot").eq("id", parsed.data.revisionId).eq("mechanism_id", mechanism.id).maybeSingle();
-  const snapshot = z.object({ name: z.string(), purpose: z.string(), requirements: z.unknown(), design_rationale: z.string(), implementation: z.unknown(), testing: z.unknown(), body_markdown: z.string().nullable().optional(), status: z.enum(["draft", "published", "archived"]), published_at: z.string().nullable().optional() }).safeParse(revision?.snapshot);
+  const snapshot = z.object({ name: z.string(), purpose: z.string(), requirements: z.unknown(), design_rationale: z.string(), implementation: z.unknown(), testing: z.unknown(), body_markdown: z.string().nullable().optional(), season_id: z.string().uuid().optional(), status: z.enum(["draft", "published", "archived"]), published_at: z.string().nullable().optional() }).safeParse(revision?.snapshot);
   if (!snapshot.success) redirect(`/admin/mechanisms/${parsed.data.slug}?error=revision`);
-  const { error } = await supabase.from("mechanisms").update({ ...snapshot.data, updated_by: user.id, updated_at: new Date().toISOString() }).eq("id", mechanism.id);
+  const { error } = await supabase.from("mechanisms").update({ ...snapshot.data, season_id: snapshot.data.season_id ?? mechanism.season_id, updated_by: user.id, updated_at: new Date().toISOString() }).eq("id", mechanism.id);
   if (error) redirect(`/admin/mechanisms/${parsed.data.slug}?error=save`);
   await supabase.from("audit_logs").insert({ actor_id: user.id, action: "revision_restored", entity_type: "mechanism", entity_id: mechanism.id, details: { revision_id: parsed.data.revisionId } });
   revalidatePath(`/mechanisms/${parsed.data.slug}`);

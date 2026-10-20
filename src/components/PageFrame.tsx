@@ -5,7 +5,7 @@ import { getSitePage, pageContentAsMarkdown } from "@/lib/site-pages";
 import SitePageBody from "@/components/SitePageBody";
 import { getHtmlHeadings } from "@/components/SafeHtmlContent";
 
-export default async function PageFrame({ pageKey }: { pageKey: string }) {
+export default async function PageFrame({ pageKey, asMain = true, showBody = true }: { pageKey: string; asMain?: boolean; showBody?: boolean }) {
   const page = await getSitePage(pageKey);
   const { eyebrow, title, intro, sections, links } = page;
   const markdown = page.bodyMarkdown ?? pageContentAsMarkdown(page);
@@ -13,15 +13,16 @@ export default async function PageFrame({ pageKey }: { pageKey: string }) {
     ? page.bodyFormat === "html" ? getHtmlHeadings(markdown) : getMarkdownHeadings(markdown).filter(heading => heading.level === 2 && heading.title.toLocaleLowerCase() !== "explore more")
     : [];
 
+  const Container = asMain ? "main" : "div";
   return (
-    <main>
+    <Container id={asMain ? "main-content" : undefined}>
       <section className="page-intro wrap">
         <div className="eyebrow"><span className="eyebrow-line" />{eyebrow}</div>
         <h1>{title}<span className="period">.</span></h1>
         <p className="lead">{intro}</p>
       </section>
 
-      {page.bodyMarkdown ? (
+      {showBody && page.bodyMarkdown ? (
         <section className="page-body wrap">
           {markdownSections.length > 0 && (
             <nav className="section-index" aria-label="In this section">
@@ -37,7 +38,7 @@ export default async function PageFrame({ pageKey }: { pageKey: string }) {
             <SitePageBody source={markdown} format={page.bodyFormat} />
           </div>
         </section>
-      ) : (
+      ) : showBody ? (
         <section className="page-body wrap">
           <nav className="section-index" aria-label="In this section">
             <span>IN THIS SECTION</span>
@@ -70,7 +71,7 @@ export default async function PageFrame({ pageKey }: { pageKey: string }) {
             )}
           </div>
         </section>
-      )}
-    </main>
+      ) : null}
+    </Container>
   );
 }
