@@ -223,9 +223,12 @@ export async function saveTeam(formData: FormData) {
   if (!client) redirect("/admin/login?error=setup");
   const { data: oldTeam } = parsed.data.id ? await client.from("teams").select("slug").eq("id", parsed.data.id).maybeSingle() : { data: null };
   const values = { slug: parsed.data.slug, name: parsed.data.name, number: parsed.data.number, summary: parsed.data.summary, status: parsed.data.status, sort_order: parsed.data.sort_order, updated_at: new Date().toISOString() };
-  const result = parsed.data.id ? await client.from("teams").update(values).eq("id", parsed.data.id) : await client.from("teams").insert(values);
-  if (result.error) redirect(`/admin/teams?error=${result.error.code === "23505" ? "duplicate" : "save"}`);
-  await client.from("audit_logs").insert({ actor_id: user.id, action: parsed.data.id ? "team_updated" : "team_created", entity_type: "team", entity_id: parsed.data.id || null, details: { slug: parsed.data.slug, number: parsed.data.number, status: parsed.data.status } });
+  const result = parsed.data.id
+    ? await client.from("teams").update(values).eq("id", parsed.data.id).select("id").maybeSingle()
+    : await client.from("teams").insert(values).select("id").single();
+  if (result.error) redirect(`/admin/teams?error=${result.error.code === "23505" ? "duplicate" : "save"}${result.error.code ? `&code=${encodeURIComponent(result.error.code)}` : ""}`);
+  if (!result.data) redirect("/admin/teams?error=unchanged");
+  await client.from("audit_logs").insert({ actor_id: user.id, action: parsed.data.id ? "team_updated" : "team_created", entity_type: "team", entity_id: result.data.id, details: { slug: parsed.data.slug, number: parsed.data.number, status: parsed.data.status } });
   revalidatePath("/"); revalidatePath("/teams"); if (oldTeam?.slug && oldTeam.slug !== parsed.data.slug) revalidatePath(`/teams/${oldTeam.slug}`); revalidatePath(`/teams/${parsed.data.slug}`); revalidatePath("/admin/teams");
   redirect("/admin/teams?saved=1");
 }

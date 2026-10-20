@@ -4,17 +4,17 @@ import { restoreTeamRevision, saveTeam } from "@/app/admin/actions";
 
 export const metadata = { title: "Manage teams", robots: { index: false, follow: false } };
 
-export default async function AdminTeams({ searchParams }: { searchParams: Promise<{ error?: string; saved?: string; restored?: string }> }) {
+export default async function AdminTeams({ searchParams }: { searchParams: Promise<{ error?: string; code?: string; saved?: string; restored?: string }> }) {
   const user = await getCmsUser();
   if (user?.role !== "admin") redirect("/admin/login?error=access");
   const client = await createClient();
   if (!client) redirect("/admin/login?error=setup");
-  const [{ data: teams }, query] = await Promise.all([
+  const [{ data: teams, error: teamsError }, query] = await Promise.all([
     client.from("teams").select("id,slug,name,number,summary,status,sort_order").order("sort_order").order("name"), searchParams
   ]);
   const teamIds = (teams ?? []).map(team => team.id);
   const { data: revisions } = teamIds.length ? await client.from("team_revisions").select("id,team_id,created_at").in("team_id", teamIds).order("created_at", { ascending: false }).limit(100) : { data: [] };
-  const errorText = query.error === "revision" ? "That team revision could not be restored." : query.error === "validation" ? "Check the team name, number, URL, and summary." : query.error === "duplicate" ? "That team number or URL is already in use." : query.error ? "The teams migration may not be installed yet." : "";
+  const errorText = query.error === "revision" ? "That team revision could not be restored." : query.error === "validation" ? "Check the team name, number, URL, and summary." : query.error === "duplicate" ? "That team number or URL is already in use." : query.error === "unchanged" ? "Supabase accepted the request but updated no team. Check the team ID and admin write policy." : query.error === "save" ? `Supabase rejected the save${query.code ? ` (database code ${query.code})` : ""}. Check the teams table, migration, and admin write policy.` : teamsError ? `Could not load teams${teamsError.code ? ` (database code ${teamsError.code})` : ""}. The team migration may be incomplete.` : query.error ? "The team change could not be completed." : "";
   return <main id="main-content" className="admin-shell"><section className="admin-dashboard">
     <div className="admin-top"><div><span className="section-tag">TEAM CMS / DIRECTORY</span><h1>Teams<span className="period">.</span></h1><p><a href="/admin">← Dashboard</a> · Each team has equal visibility and its own seasons and updates.</p></div></div>
     {query.saved && <div className="notice-success">Team saved. Public team pages have been refreshed.</div>}{query.restored && <div className="notice-success">Team version restored. The version you replaced remains in history.</div>}
