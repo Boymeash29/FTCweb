@@ -11,7 +11,8 @@ export const navigation = [
   { label: "Robot", href: "/robot" },
   { label: "Engineering", href: "/engineering" },
   { label: "Seasons", href: "/seasons" },
-  { label: "Journal", href: "/journal" }
+  { label: "Journal", href: "/journal" },
+  { label: "Members", href: "/members" }
 ];
 
 export const collections = ["seasons", "robots", "mechanisms", "projects", "software", "members", "competitions", "sponsors", "outreach", "journal", "news", "media"] as const;

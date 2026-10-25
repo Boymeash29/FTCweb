@@ -6,9 +6,9 @@ A shared Next.js website for the Seven Hills School FIRST Tech Challenge teams: 
 
 This is a deployable first release foundation, not yet the complete content system described in the project brief.
 
-- Implemented: Next.js public-site structure and pages, dark/light themes, Supabase email/password sign-in with server-side approved-user roles, editor draft workflows, structured article blocks (text, lists, quotes, code, HTTPS links), live Markdown/HTML write-preview modes, auto-snapshots and admin restore history for pages, articles, mechanisms, and seasons, editable copy/sections/links for every public landing page, admin mechanism and season management, admin-only user approval controls, audit rows for content/user changes, scheduled publishing API and GitHub Actions caller, R2 signed upload/download routes, media metadata library, search for public section routes, metadata/sitemap/robots, CI validation workflow, and beginner handover documentation.
+- Implemented: Next.js public site for both teams, the shared editorial design system, dark/light themes, Supabase CMS email/password sign-in, editor workflows and revision history, editable site pages, team/season management, admin user controls, scheduled publishing, signed R2 media uploads/downloads, and a private member hub with email sign-in links, allowlisted team access, private announcements, an event calendar, and a managed resource library.
 - Still incomplete: full CRUD screens for every normalized content type (seasons, robots, competitions, sponsors, team, outreach, software), content-to-media galleries, replacement/deletion safeguards and usage tracking for files, media transformations, diagram zoom, PDF preview, video embeds, database full-text filters, privacy-friendly analytics, Playwright/integration/accessibility/security suites, and a restore drill. The local page-editor migration was applied to the local Supabase database; hosted provider behavior has not been verified or changed. Do not treat provider-dependent features as configured.
-- No provider accounts, domain, repository remote, school logo, approved contact channel, photos, robot details, results, sponsors, historical seasons, or approved CMS users were supplied/configured. The placeholders are not real contact details or claims.
+- The hosted site and GitHub repository are connected. Team photos, robot details, verified event results, sponsor information, historical season material, and an approved public contact channel still depend on the team supplying approved content.
 
 ## Architecture recommendation
 
@@ -84,6 +84,12 @@ The admin screen creates news, journal, and project entries. Supported blocks ar
 - `proxy.ts` refreshes Supabase sessions using the current Next.js proxy convention. Never use a service-role key in public code.
 - Security headers, safe callback redirect handling, Zod validation, slug validation, and database uniqueness constraints are included.
 - Before launch: review RLS with a security-minded reviewer; add rate limiting, CSRF/security review for every write route, test provider authorization and signed URLs, configure secret scanning, and review the privacy treatment of student media.
+
+## Member hub
+
+Apply `supabase/migrations/202610240002_member_portal.sql` once to the hosted Supabase project before enabling the member hub. It creates a separate member email allowlist, team assignments, private announcements, events, and resources with row-level security; it does not change public content or CMS roles. The `/members` page stays public as a sign-in landing page, while its dashboard requires a signed-in email that an admin has approved.
+
+An administrator manages access at `/admin/members` and portal notices, calendar events, and resources at `/admin/member-content`. New accounts are invited through Supabase Auth with the server-only `SUPABASE_SECRET_KEY`; if that key is unavailable, the admin screen explains the manual invite fallback. Members use a one-time email link at `/members/login`. Add the production and local `/auth/callback` URLs to Supabase Auth's redirect allowlist. A member only sees content assigned to their teams or marked shared. Resource downloads attached as private media are checked against that same team access.
 
 ## Media and documents
 

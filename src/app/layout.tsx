@@ -8,6 +8,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import "./globals.css";
 import "./team-pages.css";
 import "./site-refresh.css";
+import "./member-portal.css";
 
 
 export const metadata: Metadata = {
