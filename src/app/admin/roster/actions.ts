@@ -78,3 +78,23 @@ export async function reorderTeamRoster(teamId: string, memberIds: string[]) {
   revalidatePath("/admin/roster");
   return { ok: true, message: "Roster order saved." };
 }
+
+export async function deleteTeamRosterMember(memberId: string) {
+  const user = await getCmsUser();
+  if (user?.role !== "admin") return { ok: false, message: "Admin access is required to delete roster entries." };
+  const parsed = z.string().uuid().safeParse(memberId);
+  if (!parsed.success) return { ok: false, message: "That roster entry could not be identified." };
+  const client = await createClient();
+  if (!client) return { ok: false, message: "The database is not configured." };
+  const { data: assignments } = await client.from("team_member_teams").select("team_id").eq("member_id", parsed.data);
+  const teamIds = [...new Set((assignments ?? []).map(assignment => assignment.team_id))];
+  const { data: teams } = teamIds.length ? await client.from("teams").select("slug").in("id", teamIds) : { data: [] };
+  const { data, error } = await client.rpc("delete_team_roster_member", { p_member_id: parsed.data });
+  if (error) return { ok: false, message: error.code === "42883" ? "Apply the roster delete migration in Supabase first." : "Could not delete this roster entry. Check the roster migrations and try again." };
+  if (!data) return { ok: false, message: "This roster entry was already removed." };
+  revalidatePath("/roster");
+  revalidatePath("/teams");
+  for (const team of teams ?? []) revalidatePath(`/teams/${team.slug}`);
+  revalidatePath("/admin/roster");
+  return { ok: true, message: "Roster entry and its team/season assignments were deleted." };
+}

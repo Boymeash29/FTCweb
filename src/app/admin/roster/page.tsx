@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient, getCmsUser } from "@/lib/supabase/server";
 import RosterOrderEditor from "@/components/RosterOrderEditor";
+import DeleteRosterMemberButton from "@/components/DeleteRosterMemberButton";
 import { saveRosterMember } from "./actions";
 
 export const metadata = { title: "Public roster", robots: { index: false, follow: false } };
@@ -39,7 +40,7 @@ export default async function AdminRosterPage({ searchParams }: { searchParams: 
       <RosterOrderEditor teams={orderedTeams}/>
       <section className="admin-panel roster-editor-panel"><div className="panel-head"><div><span className="section-tag">NEW PERSON</span><h2>Add a student or mentor</h2></div></div><RosterForm teams={teamsResult.data ?? []} action={saveRosterMember}/></section>
       <section className="roster-admin-list"><div className="panel-head"><div><span className="section-tag">PUBLISHED DIRECTORY</span><h2>People</h2></div><a href="/roster" target="_blank" rel="noreferrer">Preview public roster ↗</a></div>
-        {membersResult.data?.length ? membersResult.data.map(member => <details className="roster-admin-item" key={member.id}><summary><span><b>{member.display_name}</b><small>{member.approved_role || (member.is_mentor ? "Mentor" : "Team member")} · {member.status.toUpperCase()}</small></span><span>Edit　⌄</span></summary><RosterForm member={member} teams={teamsResult.data ?? []} selected={assignmentsByMember.get(member.id)} action={saveRosterMember}/></details>) : <div className="roster-empty"><b>No people added yet.</b><p>Add a student or mentor, assign them to one or both teams, then publish their name to show it on the website.</p></div>}
+        {membersResult.data?.length ? membersResult.data.map(member => <details className="roster-admin-item" key={member.id}><summary><span><b>{member.display_name}</b><small>{member.approved_role || (member.is_mentor ? "Mentor" : "Team member")} · {member.status.toUpperCase()}</small></span><span>Edit　⌄</span></summary><RosterForm member={member} teams={teamsResult.data ?? []} selected={assignmentsByMember.get(member.id)} action={saveRosterMember}/><DeleteRosterMemberButton memberId={member.id} name={member.display_name}/></details>) : <div className="roster-empty"><b>No people added yet.</b><p>Add a student or mentor, assign them to one or both teams, then publish their name to show it on the website.</p></div>}
       </section>
     </>}
   </section></main>;
