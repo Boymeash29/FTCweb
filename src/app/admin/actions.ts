@@ -236,19 +236,22 @@ export async function saveTeam(formData: FormData) {
 export async function saveCmsUser(formData: FormData) {
   const actor = await getCmsUser();
   if (!actor || !canManageCmsUsers(actor.role)) redirect("/admin/login?error=access");
-  const parsed = z.object({ id: z.string().uuid(), email: z.email(), role: z.enum(["admin", "editor"]), active: z.enum(["true", "false"]) }).safeParse(Object.fromEntries(formData));
+  const parsed = z.object({ email: z.email().trim().max(254), role: z.enum(["admin", "editor"]), active: z.enum(["true", "false"]) }).safeParse(Object.fromEntries(formData));
   if (!parsed.success) redirect("/admin/users?error=validation");
-  if (parsed.data.id === actor.id) redirect("/admin/users?error=self");
   const supabase = await createClient();
   if (!supabase) redirect("/admin/login?error=setup");
-  const { data: currentUsers } = await supabase.from("cms_users").select("id,role,active");
-  const target = currentUsers?.find(item => item.id === parsed.data.id);
-  const remainsAdmin = parsed.data.role === "admin" && parsed.data.active === "true";
-  if (target?.role === "admin" && target.active && !remainsAdmin && (currentUsers ?? []).filter(item => item.role === "admin" && item.active).length <= 1) redirect("/admin/users?error=lastadmin");
-  const values = { id: parsed.data.id, email: parsed.data.email, role: parsed.data.role, active: parsed.data.active === "true" };
-  const { error } = await supabase.from("cms_users").upsert(values, { onConflict: "id" });
-  if (error) redirect(`/admin/users?error=${encodeURIComponent(error.code === "23503" ? "authuser" : "save")}`);
-  await supabase.from("audit_logs").insert({ actor_id: actor.id, action: target ? "cms_user_updated" : "cms_user_approved", entity_type: "cms_user", entity_id: parsed.data.id, details: { role: values.role, active: values.active } });
+  const { error } = await supabase.rpc("save_cms_user_by_email", {
+    p_email: parsed.data.email.trim().toLowerCase(),
+    p_role: parsed.data.role,
+    p_active: parsed.data.active === "true"
+  });
+  if (error) {
+    const query = error.message === "cms_user_not_found" ? "authuser"
+      : error.message === "cms_user_self" ? "self"
+      : error.message === "cms_user_last_admin" ? "lastadmin"
+      : error.code === "PGRST202" || error.code === "42883" ? "migration" : "save";
+    redirect(`/admin/users?error=${query}`);
+  }
   revalidatePath("/admin/users");
   redirect("/admin/users?saved=1");
 }
