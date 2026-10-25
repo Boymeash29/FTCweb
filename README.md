@@ -91,6 +91,10 @@ Apply `supabase/migrations/202610240002_member_portal.sql` once to the hosted Su
 
 An administrator manages access at `/admin/members` and portal notices, calendar events, and resources at `/admin/member-content`. New accounts are invited through Supabase Auth with the server-only `SUPABASE_SECRET_KEY`; if that key is unavailable, the admin screen explains the manual invite fallback. Members use a one-time email link at `/members/login`. Add the production and local `/auth/callback` URLs to Supabase Auth's redirect allowlist. A member only sees content assigned to their teams or marked shared. Resource downloads attached as private media are checked against that same team access.
 
+## Public roster
+
+The public roster lives at `/roster`; admins can add and publish people at `/admin/roster`. Apply `supabase/migrations/202610240003_team_roster_assignments.sql` to add explicit team assignments. This keeps the BuzzerBots and Hive Mind rosters distinct even when they share a season. The migration copies assignments from team-specific seasons and leaves public member visibility governed by each person's published status. People attached only to shared seasons should be assigned to their team or teams in the admin roster.
+
 ## Media and documents
 
 The media library validates file extension/MIME and a 100 MB limit, issues short-lived signed R2 PUT URLs, stores metadata in Postgres, defaults assets to private, and issues authorized signed downloads. Public assets are delivered through short-lived signed URLs while the bucket remains private; `R2_PUBLIC_BASE_URL` is optional for custom-domain delivery. Editors cannot make an asset public. Configure bucket CORS to allow only the local origin and selected production/preview origins, PUT/GET/HEAD methods, and the `Content-Type` request header. Example allowed origins: `http://localhost:3000` and the exact production HTTPS origin. Do not use `*` for origins. Real uploads and signed access should be verified against the production R2 bucket. Object replacement/deletion and content usage tracking are not implemented. Do not upload student photos until consent and publishing approval are confirmed.

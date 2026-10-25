@@ -7,7 +7,7 @@ import { getPublicSeasons } from "@/lib/seasons";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = getSiteUrl().origin;
   const [teams, seasons] = await Promise.all([getTeams(), getPublicSeasons()]);
-  const paths = ["", "teams", "robot", "engineering", "mechanisms", "software", "seasons", "journal", "news", "projects", "outreach", "sponsors", "competitions", "contact", "privacy", "accessibility"];
+  const paths = ["", "teams", "roster", "robot", "engineering", "mechanisms", "software", "seasons", "journal", "news", "projects", "outreach", "sponsors", "competitions", "contact", "privacy", "accessibility"];
   const teamPaths = teams.flatMap(team => [`teams/${team.slug}`, `teams/${team.slug}/robot`, `teams/${team.slug}/engineering`]);
   const fixed = [...paths, ...teamPaths, ...seasons.map(season => `seasons/${season.slug}`)].map(path => ({
     url: path ? new URL(`/${path}`, base).toString() : base,

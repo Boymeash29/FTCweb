@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowDown, ArrowRight, ArrowUpRight, Atom, Bot, BookOpen, Wrench } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUpRight, Atom, Bot, BookOpen, Users, Wrench } from "lucide-react";
 import { getSitePage, homeSectionsFromBody } from "@/lib/site-pages";
 import SitePageBody from "@/components/SitePageBody";
 import { getTeams } from "@/lib/teams";
@@ -16,6 +16,7 @@ const highlights = [
   { title: "Robots", eyebrow: "DESIGN · BUILD · COMPETE", description: "Get to know each robot and the choices behind its design.", href: "/robot", icon: Bot, number: "01" },
   { title: "Engineering", eyebrow: "OUR PROCESS", description: "Explore how ideas become tested, working solutions.", href: "/engineering", icon: Wrench, number: "02" },
   { title: "Build journal", eyebrow: "NOTES FROM THE WORKSHOP", description: "Follow experiments, iterations, and lessons from the season.", href: "/journal", icon: BookOpen, number: "03" },
+  { title: "Team roster", eyebrow: "THE PEOPLE BEHIND THE ROBOTS", description: "Meet the students and mentors building our two teams.", href: "/roster", icon: Users, number: "04" },
 ];
 
 export default async function Home() {

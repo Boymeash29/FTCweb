@@ -12,7 +12,7 @@ export const navigation = [
   { label: "Engineering", href: "/engineering" },
   { label: "Seasons", href: "/seasons" },
   { label: "Journal", href: "/journal" },
-  { label: "Members", href: "/members" }
+  { label: "Roster", href: "/roster" }
 ];
 
 export const collections = ["seasons", "robots", "mechanisms", "projects", "software", "members", "competitions", "sponsors", "outreach", "journal", "news", "media"] as const;
@@ -67,6 +67,7 @@ const publicSections = [
   { title: "Build journal", href: "/journal", type: "Journal", text: "Build log experiments progress" },
   { title: "Software", href: "/software", type: "Software", text: "Programming controls code" },
   { title: "Seven Hills FTC teams", href: "/teams", type: "Teams", text: "BuzzerBots 23826 Hive Mind 36438" },
+  { title: "Team roster", href: "/roster", type: "Roster", text: "Meet the students mentors people BuzzerBots Hive Mind" },
   { title: "BuzzerBots · Team 23826", href: "/teams/buzzerbots", type: "Team", text: "Seven Hills BuzzerBots" },
   { title: "BuzzerBots robot archive", href: "/teams/buzzerbots/robot", type: "Robot", text: "Team 23826 robots" },
   { title: "BuzzerBots engineering portfolio", href: "/teams/buzzerbots/engineering", type: "Engineering", text: "Team 23826 projects mechanisms software" },
