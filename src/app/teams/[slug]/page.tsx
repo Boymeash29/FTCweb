@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import RosterAvatar from "@/components/RosterAvatar";
 import { createClient } from "@/lib/supabase/server";
 import { getTeam } from "@/lib/teams";
 
@@ -26,11 +27,14 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
   ]);
   const memberIds = [...new Set((membershipResult.data ?? []).map(item => item.member_id))];
   const teamEntries=(entryResult.data??[]).filter(entry=>entry.team_id===team.id || (!entry.team_id && !!entry.season_id && seasonIds.includes(entry.season_id)) ).slice(0,6);
-  const { data: members } = client && memberIds.length ? await client.from("team_members").select("id,display_name,approved_role,is_mentor").in("id", memberIds).eq("status", "published").order("sort_order") : { data: [] };
+  const { data: members } = client && memberIds.length ? await client.from("team_members").select("id,display_name,approved_role,is_mentor,photo_asset_id").in("id", memberIds).eq("status", "published").order("sort_order") : { data: [] };
+  const photoIds = [...new Set((members ?? []).flatMap(member => member.photo_asset_id ? [member.photo_asset_id] : []))];
+  const { data: photoAssets } = client && photoIds.length ? await client.from("media_assets").select("id,alt_text").in("id", photoIds).eq("is_public", true) : { data: [] };
+  const photoById = new Map((photoAssets ?? []).map(photo => [photo.id, photo.alt_text]));
   const memberById = new Map((members ?? []).map(member => [member.id, member]));
   const teamMembers = [...new Map((membershipResult.data ?? []).flatMap(membership => {
     const member = memberById.get(membership.member_id);
-    return member ? [[member.id, { ...member, role: membership.role_label || member.approved_role || (member.is_mentor ? "Mentor" : "Team member") }] as const] : [];
+    return member ? [[member.id, { ...member, photoAlt: member.photo_asset_id ? photoById.get(member.photo_asset_id) : null, role: membership.role_label || member.approved_role || (member.is_mentor ? "Mentor" : "Team member") }] as const] : [];
   })).values()];
   const seasonName = (seasonId: string) => seasons?.find(season => season.id === seasonId)?.name ?? "Season";
 
@@ -54,7 +58,7 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
         {(softwareResult.data ?? []).map(item=><Link className="team-profile-card" href={`/software/${item.slug}`} key={`software-${item.id}`}><small>SOFTWARE · {item.category} · {seasonName(item.season_id)}</small><b>{item.title}<ArrowUpRight size={16}/></b>{item.summary&&<p>{item.summary}</p>}</Link>)}
       </div> : <p className="team-profile-empty">Published engineering projects, mechanisms, and software documentation for {team.name} will appear here.</p>}
     </section>
-    <section className="team-profile-section" id="roster"><div className="team-profile-section-heading"><span className="section-tag">PEOPLE · APPROVED ROSTER</span><Link href="/roster">Both teams <ArrowUpRight size={14}/></Link></div>{teamMembers.length ? <div className="team-member-grid">{teamMembers.map(member=><article className="team-member-card" key={`${member.id}-${member.role}`}><span className="team-member-initials" aria-hidden="true">{member.display_name.trim().split(/\s+/).slice(0,2).map((part: string)=>part[0]).join("").toUpperCase()}</span><b>{member.display_name}</b><span>{member.role}</span></article>)}</div> : <p className="team-profile-empty">The public roster for {team.name} will appear here once the team publishes its approved names. Visit the <Link href="/roster">team roster</Link> for both groups.</p>}</section>
+    <section className="team-profile-section" id="roster"><div className="team-profile-section-heading"><span className="section-tag">PEOPLE · APPROVED ROSTER</span><Link href="/roster">Both teams <ArrowUpRight size={14}/></Link></div>{teamMembers.length ? <div className="team-member-grid">{teamMembers.map(member=><article className="team-member-card" key={`${member.id}-${member.role}`}><RosterAvatar assetId={member.photo_asset_id} name={member.display_name} alt={member.photoAlt}/><b>{member.display_name}</b><span>{member.role}</span></article>)}</div> : <p className="team-profile-empty">The public roster for {team.name} will appear here once the team publishes its approved names. Visit the <Link href="/roster">team roster</Link> for both groups.</p>}</section>
     <section className="team-profile-section">
       <div className="team-profile-section-heading"><span className="section-tag">LATEST FROM THE TEAM</span><Link href="/journal">All updates <ArrowUpRight size={14}/></Link></div>
       {teamEntries.length ? <div className="team-profile-grid">{teamEntries.map(entry=><Link className="team-profile-card" href={`/${entry.type === "project" ? "projects" : entry.type}/${entry.slug}`} key={entry.slug}><small>{entry.type.toUpperCase()}{entry.published_at ? ` · ${new Date(entry.published_at).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"})}` : ""}</small><b>{entry.title}<ArrowUpRight size={16}/></b><p>{entry.summary}</p></Link>)}</div> : <p className="team-profile-empty">Published updates, projects, and build notes for {team.name} will appear here.</p>}

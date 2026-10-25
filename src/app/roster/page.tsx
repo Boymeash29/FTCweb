@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, Users } from "lucide-react";
+import RosterAvatar from "@/components/RosterAvatar";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicSeasons, seasonBelongsToTeam } from "@/lib/seasons";
 import { getTeams } from "@/lib/teams";
@@ -21,14 +22,20 @@ export default async function RosterPage() {
       : { data: [] };
     const memberIds = [...new Set((memberships ?? []).map(item => item.member_id))];
     const { data: members } = client && memberIds.length
-      ? await client.from("team_members").select("id,display_name,approved_role,is_mentor,sort_order").in("id", memberIds).eq("status", "published").order("sort_order").order("display_name")
+      ? await client.from("team_members").select("id,display_name,approved_role,is_mentor,photo_asset_id,sort_order").in("id", memberIds).eq("status", "published").order("sort_order").order("display_name")
       : { data: [] };
+    const photoIds = [...new Set((members ?? []).flatMap(member => member.photo_asset_id ? [member.photo_asset_id] : []))];
+    const { data: photoAssets } = client && photoIds.length
+      ? await client.from("media_assets").select("id,alt_text").in("id", photoIds).eq("is_public", true)
+      : { data: [] };
+    const photoById = new Map((photoAssets ?? []).map(photo => [photo.id, photo.alt_text]));
     const memberById = new Map((members ?? []).map(member => [member.id, member]));
     const people = [...new Map((memberships ?? []).flatMap(membership => {
       const member = memberById.get(membership.member_id);
       return member ? [[member.id, {
         ...member,
         role: membership.role_label || member.approved_role || (member.is_mentor ? "Mentor" : "Team member"),
+        photoAlt: member.photo_asset_id ? photoById.get(member.photo_asset_id) : null,
       }] as const] : [];
     })).values()];
     return { team, seasons: rosterSeasons, people };
@@ -53,7 +60,7 @@ export default async function RosterPage() {
         </header>
         {people.length ? <div className="roster-grid">{people.map((person, personIndex) => <article className="roster-card" key={person.id}>
           <span className="roster-card-number">{String(personIndex + 1).padStart(2, "0")}</span>
-          <span className="roster-avatar" aria-hidden="true">{person.display_name.trim().split(/\s+/).slice(0, 2).map((part: string) => part[0]).join("").toUpperCase()}</span>
+          <RosterAvatar assetId={person.photo_asset_id} name={person.display_name} alt={person.photoAlt}/>
           <div><h3>{person.display_name}</h3><p>{person.role}</p></div>
           <span className="roster-card-mark" aria-hidden="true">{person.is_mentor ? "MENTOR" : "TEAM"}</span>
         </article>)}</div> : <div className="roster-empty"><span className="roster-empty-mark"><Users size={23}/></span><div><b>Roster coming soon</b><p>Approved student and mentor names for {team.name} will appear here when the team publishes them.</p></div></div>}

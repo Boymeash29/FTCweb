@@ -9,6 +9,7 @@ const rosterSchema = z.object({
   id: z.union([z.literal(""), z.string().uuid()]),
   display_name: z.string().trim().min(1).max(100),
   approved_role: z.string().trim().max(100),
+  photo_asset_id: z.union([z.literal(""), z.string().uuid()]),
   is_mentor: z.enum(["true", "false"]),
   status: z.enum(["draft", "published", "archived"]),
   team_ids: z.array(z.string().uuid()).min(1).max(20),
@@ -28,10 +29,15 @@ export async function saveRosterMember(formData: FormData) {
   if (assignmentTableError) redirect(`/admin/roster?error=${assignmentTableError.code === "42P01" ? "migration" : "save"}`);
 
   const { team_ids: teamIds, ...memberValues } = parsed.data;
+  if (memberValues.photo_asset_id) {
+    const { data: photo, error } = await client.from("media_assets").select("id").eq("id", memberValues.photo_asset_id).eq("is_public", true).like("mime_type", "image/%").maybeSingle();
+    if (error || !photo) redirect("/admin/roster?error=photo");
+  }
   const { data: saved, error: memberError } = await client.from("team_members").upsert({
     ...(memberValues.id ? { id: memberValues.id } : {}),
     display_name: memberValues.display_name,
     approved_role: memberValues.approved_role || null,
+    photo_asset_id: memberValues.photo_asset_id || null,
     is_mentor: memberValues.is_mentor === "true",
     status: memberValues.status,
   }).select("id").single();
