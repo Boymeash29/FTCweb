@@ -22,7 +22,7 @@ export default async function TeamPage({ params }: { params: Promise<{ slug: str
     client && seasonIds.length ? client.from("mechanisms").select("id,name,slug,purpose,season_id").in("season_id", seasonIds).eq("status", "published").order("sort_order") : Promise.resolve({ data: [] }),
     client && seasonIds.length ? client.from("software_documents").select("id,title,slug,summary,category,season_id").in("season_id", seasonIds).eq("status", "published").order("title") : Promise.resolve({ data: [] }),
     client && seasonIds.length ? client.from("outreach_events").select("id,name,event_date,description,season_id").in("season_id", seasonIds).eq("status", "published").order("event_date", { ascending: false }).limit(6) : Promise.resolve({ data: [] }),
-    client && team.id ? client.from("team_member_teams").select("member_id,role_label").eq("team_id", team.id) : Promise.resolve({ data: [] })
+    client && team.id ? client.from("team_member_teams").select("member_id,role_label,sort_order").eq("team_id", team.id).order("sort_order") : Promise.resolve({ data: [] })
   ]);
   const memberIds = [...new Set((membershipResult.data ?? []).map(item => item.member_id))];
   const teamEntries=(entryResult.data??[]).filter(entry=>entry.team_id===team.id || (!entry.team_id && !!entry.season_id && seasonIds.includes(entry.season_id)) ).slice(0,6);

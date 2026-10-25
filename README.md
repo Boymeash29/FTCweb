@@ -93,7 +93,7 @@ An administrator manages access at `/admin/members` and portal notices, calendar
 
 ## Public roster
 
-The public roster lives at `/roster`; admins can add and publish people at `/admin/roster`. Apply `supabase/migrations/202610240003_team_roster_assignments.sql` to add explicit team assignments. This keeps the BuzzerBots and Hive Mind rosters distinct even when they share a season. The migration copies assignments from team-specific seasons and leaves public member visibility governed by each person's published status. People attached only to shared seasons should be assigned to their team or teams in the admin roster.
+The public roster lives at `/roster`; admins can add, publish, and reorder people at `/admin/roster`. Apply migrations `202610240003_team_roster_assignments.sql` and `202610240004_roster_sort_order.sql` to add explicit team assignments and team-specific ordering. This keeps the BuzzerBots and Hive Mind rosters distinct even when they share a season. The assignment migration copies assignments from team-specific seasons and leaves public member visibility governed by each person's published status. People attached only to shared seasons should be assigned to their team or teams in the admin roster.
 
 ## Media and documents
 

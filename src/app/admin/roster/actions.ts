@@ -11,7 +11,6 @@ const rosterSchema = z.object({
   approved_role: z.string().trim().max(100),
   is_mentor: z.enum(["true", "false"]),
   status: z.enum(["draft", "published", "archived"]),
-  sort_order: z.coerce.number().int().min(0).max(10000),
   team_ids: z.array(z.string().uuid()).min(1).max(20),
 });
 
@@ -35,7 +34,6 @@ export async function saveRosterMember(formData: FormData) {
     approved_role: memberValues.approved_role || null,
     is_mentor: memberValues.is_mentor === "true",
     status: memberValues.status,
-    sort_order: memberValues.sort_order,
   }).select("id").single();
   if (memberError || !saved) redirect(`/admin/roster?error=${memberError?.code === "42P01" ? "migration" : "save"}`);
 
@@ -58,4 +56,25 @@ export async function saveRosterMember(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/admin/roster");
   redirect("/admin/roster?saved=1");
+}
+
+export async function reorderTeamRoster(teamId: string, memberIds: string[]) {
+  const user = await getCmsUser();
+  if (user?.role !== "admin") return { ok: false, message: "Admin access is required to change roster order." };
+  const parsed = z.object({ teamId: z.string().uuid(), memberIds: z.array(z.string().uuid()).max(500) }).safeParse({ teamId, memberIds });
+  if (!parsed.success || new Set(parsed.data.memberIds).size !== parsed.data.memberIds.length) {
+    return { ok: false, message: "That roster order is invalid. Refresh the page and try again." };
+  }
+  const client = await createClient();
+  if (!client) return { ok: false, message: "The database is not configured." };
+  const { error } = await client.rpc("save_team_member_roster_order", {
+    p_team_id: parsed.data.teamId,
+    p_member_ids: parsed.data.memberIds,
+  });
+  if (error) return { ok: false, message: error.code === "42883" ? "Apply the roster sort-order migration in Supabase first." : "Could not save this order. Check the roster migration and try again." };
+  const { data: team } = await client.from("teams").select("slug").eq("id", parsed.data.teamId).maybeSingle();
+  revalidatePath("/roster");
+  if (team?.slug) revalidatePath(`/teams/${team.slug}`);
+  revalidatePath("/admin/roster");
+  return { ok: true, message: "Roster order saved." };
 }

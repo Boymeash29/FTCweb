@@ -23,8 +23,8 @@ create policy team_member_teams_admin_manage on public.team_member_teams for all
   using (public.is_cms_admin()) with check (public.is_cms_admin());
 grant select on public.team_member_teams to anon, authenticated;
 
-insert into public.team_member_teams(member_id, team_id, role_label)
-select distinct sm.member_id, s.team_id, coalesce(sm.role_label, m.approved_role)
+insert into public.team_member_teams(member_id, team_id, role_label, sort_order)
+select distinct sm.member_id, s.team_id, coalesce(sm.role_label, m.approved_role), m.sort_order
 from public.season_memberships sm
 join public.seasons s on s.id = sm.season_id
 join public.team_members m on m.id = sm.member_id
